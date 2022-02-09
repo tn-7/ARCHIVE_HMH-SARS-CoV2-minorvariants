@@ -1,0 +1,1 @@
+# HMH-SARS-CoV2-minorvariants
