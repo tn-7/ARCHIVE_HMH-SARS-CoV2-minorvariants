@@ -1,0 +1,164 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+libraries = c("tidyverse", "cowplot", "ggforce", "gggenes", "viridis", "ggpubr", "data.table", "ggrepel", "ggpubr", "lme4", "GLMMadaptive", "ggExtra", "scales", "stringr", "ggExtra");
+invisible(suppressPackageStartupMessages(lapply(libraries, require, character.only = TRUE)));
+
+patient_var_tmp = fread("processing/var_meta_merge_noCTfilter.txt",
+                        data.table = F)
+
+
+all_replicates_table_filt<-fread("replicated_samples.csv", data.table=F) %>% filter(MCoVNumber %in% samples_n_var$MCoVNumber)
+
+nuc = c("A","C","T","G")
+rep_table = all_replicates_table_filt %>% filter(minor.original %in% nuc) %>%
+  select(MCoVNumber, ntpos, minor = minor.original, minor.reseq,minorfreq.reseq)
+
+minor_codon = var_aa %>%
+  filter(MCoVNumber %in% rep_table$MCoVNumber) %>%
+  select(MCoVNumber, gene, 
+                ntpos, minor, minorfreq, codon_pos) %>% 
+  left_join(rep_table) %>% mutate(reproducible = minor == minor.reseq)
+
+minor_codon[minor_codon$reproducible,] = 
+  minor_codon[minor_codon$reproducible,] %>%
+  mutate(reproducible = if_else(reproducible, TRUE, FALSE)) # insert MAF cutoff if necessary
+
+minor_codon_out = minor_codon %>% group_by(MCoVNumber) %>% 
+  summarize(n_var = n(), reproducible_num =sum(reproducible), reproducible_prop = reproducible_num/n_var) %>% left_join(patient_var_tmp) %>% select(MCoVNumber, reproducible_num, reproducible_prop, n_var, lineage:last_col()) %>% distinct()
+
+```
+
+```{r, fig.width = 1.5, fig.height = 1.5}
+y_sample = minor_codon_out %>% distinct(MCoVNumber, .keep_all = T)
+y = y_sample %>% 
+  select(reproducible_num, n_var) %>%
+  mutate(nonreproducible_num = n_var - reproducible_num) %>% 
+  select(-n_var) %>%
+  as.matrix()
+summary(glm(y ~ median_coverage, data = y_sample, family = "binomial"))
+
+
+p = ggplot(data = y_sample, aes(n_var, reproducible_prop)) + 
+  geom_smooth(se = F, color = "red") +
+  geom_point(shape = 21) +
+  theme_pubr() + 
+  scale_x_continuous(trans="log1p", breaks = c(1,2,5,10,50,100,400))
+ggMarginal(p, type = "violin", draw_quantiles = c(.25, .5, .75))
+quantile(y_sample$n_var, c(0.25, 0.5))
+```
+```{r}
+
+model = glm(formula = y ~ admitted_hospital, data = y_sample, family = "binomial")
+summary(model)
+```
+
+```{r}
+# minor_codon_uni = y_sample %>%
+#   mutate(ordinal_counts = cut(n_var, breaks = seq(0,30,5))) %>%
+#   select(-c(collection_month,INSTRUMENT_RESULT)) %>%
+#   mutate(z__fraction_1000x_coverage = scale(fraction_1000x_coverage)) %>%
+#   mutate(z__median_coverage = scale(median_coverage)) %>%
+#   mutate(z__collection_date = scale(collection_date)) %>%
+#   mutate(z__CT = scale(CT)) %>%
+#   mutate(z__Duration = scale(Duration)) %>%
+#   select(-c(fraction_1000x_coverage, median_coverage, collection_date))
+# 
+# factor2binary = function(patient_counts_uni, columns) {
+#   index = 0
+#   for (column in columns) {
+#     index = index + 1
+#     out_tmp = patient_counts_uni
+#     check = patient_counts_uni %>% pull(get(column)) %>%
+#       unique %>% length < 8
+#     if (check) {
+#       out_tmp = patient_counts_uni %>%
+#       mutate(value = "YES",
+#              tmp = paste0(column,"___",
+#                           get(column))) %>%
+#       pivot_wider(names_from  = tmp,
+#                   values_from = value,
+#                   values_fill = "NO")
+#     }
+#     if (index == 1) {
+#       out = out_tmp
+#     } else {
+#       out = suppressMessages(out %>% left_join(out_tmp))
+#     }
+#   }
+#   return(out %>% dplyr::rename_all(funs(make.names(.))))
+# }
+# 
+# minor_codon_uni_tmp = factor2binary(
+#   minor_codon_uni,
+#      colnames(minor_codon_uni) %>% as.data.frame() %>%
+#       filter(!str_detect(.,'ordinal_counts')) %>% pull(.)
+#   )
+# 
+# # fwrite(patient_counts_uni_tmp,
+# #       "processing/patient_counts_for_modeling.txt")
+# 
+# exclude = c("lineage", "MCoVNumber" , "COLLECTION_DT" , "run",
+#             "filename", "fraction_100x_coverage", "fraction_200x_coverage",
+#             "fraction_500x_coverage", "n", "mcov_id",
+#             "run_group", "RECEIVE_DT","VERIFIED_DT", "ordinal_counts")
+# include = colnames(minor_codon_uni_tmp) %>% as.data.frame %>%
+#   filter(!. %in% exclude) %>% filter(str_detect(.,'__')) %>% pull(.)
+# 
+# unitable = function(patient_counts_uni, include, y = NA,
+#                     dv = "ordinal_counts", other_iv = NA) {
+#     index = 0; for (i in include) {
+#     flag = T
+#     index = index + 1
+#     if (!is.na(other_iv)){
+#         formulas_tmp = formula(paste0(dv, " ~", i, "+", other_iv))
+#     } else {
+#         formulas_tmp = formula(paste0(dv, " ~", i))
+#     }
+#      m <- tryCatch(mixed_model(formulas_tmp,
+#                                random = ~ 1 | run,
+#                                data = patient_counts_uni,
+#       family = binomial, control = list(iter_EM = 0)),
+#       error=function(e) flag<<-FALSE)
+#     if (!flag) next
+#     coef_table = summary(m)$coef_table
+#     # table of estimates with 95% CI
+#     tab <- cbind(Est = coef_table[,1],
+#                  LL = coef_table[,1] - 1.96 * coef_table[,2],
+#                  UL = coef_table[,1] + 1.96 * coef_table[,2]) %>%
+#       as.data.frame
+#     out_odds_tmp = (tab) %>%
+#       mutate(pval = coef_table[,4]) %>%
+#       .[-1,] %>% rownames_to_column
+#     if (index == 1) {
+#       out_odds = out_odds_tmp
+#     } else {
+#       out_odds = rbind(out_odds, out_odds_tmp)
+#     }
+#   }
+#   out_odds = out_odds %>% arrange(pval) %>%
+#     mutate(rowname = str_remove(rowname, "YES"))
+# 
+#   # count number of "YES" occurrences per column
+#   YEScount = function(string) {
+#     return(sum(str_count(string, pattern = "YES")))
+#   }
+#   counts = sapply(patient_counts_uni_tmp, YEScount)
+#   df_counts = data.frame(rowname = names(counts), counts)
+#   out = out_odds %>% left_join(df_counts, by = "rowname")
+#   return(out)
+# }
+# 
+# minor_codon_uni_odds = unitable(minor_codon_uni_tmp, include, dv = "y", y=y)
+# #fwrite(out_odds, "output/OR_ordinal.txt", sep = "\t")
+# View(minor_codon_uni_odds)
+# out_odds_hosp = unitable(patient_counts_uni_tmp , include, dv = "ordinal_counts", other_iv = "admitted_hospital + z__CT")
+# 
+# out_odds_outlier = unitable(patient_counts_uni_tmp, include, dv = "high_counts")
+# #fwrite(out_odds_outlier, "output/OR_greater30counts.txt", sep = "\t")
+```
+

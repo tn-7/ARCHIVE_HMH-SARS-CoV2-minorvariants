@@ -1,0 +1,78 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r, fig.width = 2, fig.height = 2.5}
+libraries = c("tidyverse", "cowplot", "ggforce", "gggenes", "viridis", "ggpubr", "data.table", "ggrepel", "ggpubr", "lme4", "GLMMadaptive", "ggExtra", "scales", "stringr", "ggExtra", "broom");
+invisible(suppressPackageStartupMessages(lapply(libraries, require, character.only = TRUE)));
+patient_var_tmp = fread("processing/var_aa_ct.txt", data.table = F) %>% 
+  left_join(patient_data) %>% #mutate(high_counts = n_var > 50) %>% 
+ select(-pui) %>% left_join(sample_type) %>% 
+  left_join(sample_duration %>% select(-COLLECTION_DT))
+
+#patient_var = patient_var_tmp %>% filter(INSTRUMENT_RESULT < 26) 
+
+```
+
+```{r}
+
+# y = gene_counts_meta_tmp %>% ungroup %>% select(ORF8:E) %>% as.matrix
+# 
+# gator_vglm = vglm(
+#   y ~ z__CT + mAb___1, 
+#   data = gene_counts_meta_tmp, 
+#   family = multinomial)
+# 
+# test = summary(gator_vglm)
+
+
+nb_frame = patient_counts_uni_tmp %>% mutate(mAb___1 = factor(mAb___1), admitted_hospital___1 = as.factor(admitted_hospital___1))
+
+library(magrittr)
+
+
+# lm_frame = meta %>% filter(n_var < 30) %>% select(-MCoVNumber)
+# lm_frame%<>%
+#     mutate_if(is.character,as.factor)
+# Hitters <- model.matrix(~., lm_frame)[,-1]
+# Hitters <- as.data.frame(Hitters)[!colSums(Hitters) == 0]
+# 
+# abess_fit <- abess(log10(n_var+1) ~ ., Hitters)
+# ((best.model <- extract(abess_fit)))
+# 
+# 
+# model = lm(log10(n_var+1) ~ ., data = lm_frame)
+# 
+# k = abess(y=lm_frame$n_var, x= lm_frame)
+
+library(lme4)
+# model.nb = glmer.nb(n_var ~ z__CT + admitted_hospital___1 + (1|run), data = nb_frame %>% filter(n_var < 30))
+# summary(model.nb)
+library(nlme)
+model.nb = lme(log10(n_var+1) ~ admitted_hospital + CT, 
+               random = ~1|run, 
+               data = patient_var_tmp %>% filter(CT > 35, n_var > 30))
+x = summary(model.nb)
+coef(x)
+
+# model.oc = mixed_model(ordinal_counts ~ z__CT + admitted_hospital___1, data = nb_frame,
+#                        random = ~ 1|run, family = "binomial")
+
+summary(model.oc)
+```
+
+
+```{r}
+lm_frame %>% ggplot(aes(z__CT, log10(n_var + 1),
+                        color = admitted_hospital___1)) + geom_point(alpha = 0.1, shape = ".") + geom_smooth(method="lm") + theme_pubr()
+```
+
+```{r}
+
+```
+

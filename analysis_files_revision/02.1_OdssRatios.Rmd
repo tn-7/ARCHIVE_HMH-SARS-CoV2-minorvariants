@@ -1,0 +1,734 @@
+---
+title: "Odds Ratios"
+output: html_notebook
+
+---
+
+# INIT
+```{r}
+source("./scripts/startup.R")
+source("./scripts/load_data.R")
+```
+# MODELING STAGE
+
+Demonstrate whether a linear regression can be fit or not
+```{r}
+tmp = patient_counts
+p = ggplot(tmp, aes(sample = n_var)) + stat_qq() + stat_qq_line() + theme_pubr()
+q = ggplot(tmp, aes(sample = log10(n_var+1))) + stat_qq() + stat_qq_line() + theme_pubr()
+plot_grid(p, q)
+```
+Univariate table
+```{r}
+patient_counts_uni = patient_counts %>% 
+  mutate(ordinal_counts = cut(n_var, breaks = seq(0,30,5))) %>%
+  select(-c(collection_month,INSTRUMENT_RESULT)) %>%
+  mutate(z__fraction_1000x_coverage = scale(fraction_1000x_coverage)) %>%
+  mutate(z__median_coverage = scale(median_coverage)) %>%
+  mutate(z__collection_date = scale(collection_date)) %>%
+  mutate(z__CT = scale(CT)) %>%
+  mutate(z__Duration = scale(Duration)) %>%
+  select(-c(fraction_1000x_coverage, median_coverage, collection_date))
+
+factor2binary = function(patient_counts_uni, columns) {
+  index = 0
+  for (column in columns) {
+    index = index + 1
+    out_tmp = patient_counts_uni
+    check = patient_counts_uni %>% pull(get(column)) %>% 
+      unique %>% length < 8
+    if (check) {
+      out_tmp = patient_counts_uni %>%
+      mutate(value = "YES",
+             tmp = paste0(column,"___", 
+                          get(column))) %>% 
+      pivot_wider(names_from  = tmp,
+                  values_from = value,
+                  values_fill = "NO")
+    }
+    if (index == 1) {
+      out = out_tmp
+    } else {
+      out = suppressMessages(out %>% left_join(out_tmp))
+    }
+  }
+  return(out %>% dplyr::rename_all(funs(make.names(.))))
+}
+
+patient_counts_uni_tmp = factor2binary(
+  patient_counts_uni, 
+     colnames(patient_counts_uni) %>% as.data.frame() %>% 
+      filter(!str_detect(.,'ordinal_counts')) %>% pull(.)
+  )
+
+# fwrite(patient_counts_uni_tmp, 
+#       "processing/patient_counts_for_modeling.txt")
+
+exclude = c("lineage", "MCoVNumber" , "COLLECTION_DT" , "run",
+            "filename", "fraction_100x_coverage", "fraction_200x_coverage",
+            "fraction_500x_coverage", "n", "mcov_id", 
+            "run_group", "RECEIVE_DT","VERIFIED_DT", "ordinal_counts", "high_counts")
+include = colnames(patient_counts_uni_tmp) %>% as.data.frame %>% 
+  filter(!. %in% exclude) %>% filter(str_detect(.,'__')) %>% pull(.)
+
+unitable = function(patient_counts_uni, include, 
+                    dv = "ordinal_counts", other_iv = NA) {
+    index = 0; for (i in include) {
+    flag = T
+    index = index + 1
+    if (!is.na(other_iv)){
+        formulas_tmp = formula(paste0(dv, " ~", i, "+", other_iv))
+    } else {
+        formulas_tmp = formula(paste0(dv, " ~", i))
+    }
+    
+     m <- tryCatch(mixed_model(formulas_tmp,
+                              random = ~ 1 | run,
+                              data = patient_counts_uni,
+     family = binomial, control = list(iter_EM = 0)),
+     error=function(e) flag<<-FALSE)
+    
+    if (!flag) next
+    coef_table = summary(m)$coef_table
+    # table of estimates with 95% CI
+    tab <- cbind(estimate = coef_table[,1], 
+                 se = coef_table[,2], pvalue = coef_table[,4]) %>%
+                 #UL = coef_table[,1] + 1.96 * coef_table[,2]) %>%
+      as.data.frame
+    out_odds_tmp = (tab) %>% 
+      mutate(pval = coef_table[,4]) %>% 
+      .[-1,] %>% rownames_to_column
+    if (index == 1) {
+      out_odds = out_odds_tmp
+    } else {
+      out_odds = rbind(out_odds, out_odds_tmp)
+    }
+  }
+  out_odds = out_odds %>% arrange(pval) %>% 
+    mutate(rowname = str_remove(rowname, "YES"))
+  
+  # count number of "YES" occurrences per column
+  YEScount = function(string) {
+    return(sum(str_count(string, pattern = "YES")))
+  }
+  counts = sapply(patient_counts_uni_tmp %>% 
+                    filter(!is.na(.data[[dv]])), YEScount)
+  df_counts = data.frame(rowname = names(counts), counts)
+  out = out_odds %>% left_join(df_counts, by = "rowname")
+  return(out)
+}
+
+out_odds = unitable(patient_counts_uni_tmp, include, dv = "ordinal_counts")
+#fwrite(out_odds, "output/OR_ordinal.txt", sep = "\t")
+
+# out_odds_hosp = unitable(patient_counts_uni_tmp , include, dv = "ordinal_counts", other_iv = "admitted_hospital + z__CT")
+
+#out_odds_outlier = unitable(patient_counts_uni_tmp, include, dv = "high_counts")
+#fwrite(out_odds_outlier, "output/OR_greater50counts.txt", sep = "\t")
+```
+
+
+
+```{r, fig.width = 4, fig.height = 5}
+library(ggforestplot)
+
+out_odds_all = out_odds %>% filter(!str_detect(rowname,"___0|FALSE|Not.Surveillance|_F")) %>% mutate(group = "all")
+
+out_odds_ct = unitable(patient_counts_uni_tmp %>% filter(CT<18), include, dv = "ordinal_counts")
+
+out_odds_ct = out_odds_ct %>% filter(!str_detect(rowname,"___0|FALSE|Not.Surveillance|_F")) %>% mutate(group = "CT<18")
+
+
+out_odds_coverage = unitable(patient_counts_uni_tmp %>% filter(fraction_500x_coverage > 0.98), include, dv = "ordinal_counts")
+
+out_odds_coverage = out_odds_coverage %>% filter(!str_detect(rowname,"___0|FALSE|Not.Surveillance|_F")) %>% mutate(group = "coverage500x98")
+
+plotforest = rbind(out_odds, out_odds_ct, out_odds_coverage)
+
+
+out_odds_multi = unitable(patient_counts_uni_tmp, include, dv = "ordinal_counts", other_iv = "admitted_hospital + z__CT")
+
+out_odds_multi = out_odds_multi %>% 
+  filter(!str_detect(rowname, "___0|FALSE|Not.Surveillance|_F|admitted|CT")) %>% 
+  mutate(group = "MULTIadmittedCT")
+
+plotforest = rbind(out_odds, out_odds_ct, out_odds_coverage, out_odds_multi)
+
+
+
+forestplot(plotforest, rowname, estimate, se, pvalue, group)
+```
+
+```{r}
+#out_odds = unitable(patient_counts_uni_tmp, include, dv = "ordinal_counts")
+out_odds = fread("output/OR_ordinal.txt", data.table = F) %>% mutate(model = "lower", rank = 1:nrow(.))
+
+# out_odds_hosp = unitable(patient_counts_uni_tmp , include, dv = "ordinal_counts", other_iv = "admitted_hospital + z__CT")
+
+# out_odds_outlier = unitable(patient_counts_uni_tmp, include, dv = "high_counts") %>% mutate(model = "lower", rank = 1:nrow(.))
+out_odds_outlier = fread("output/OR_greater50counts.txt", data.table = F) %>% mutate(model = "high", rank = 1:nrow(.))
+
+uni_coef = out_odds %>% left_join(out_odds_outlier, by = "rowname") %>%
+  select(rowname, Est.x, Est.y, pval.x, pval.y, rank.x, rank.y) %>% 
+  filter(!str_detect(rowname,"___0|FALSE|Not.Surveillance"))
+
+
+x_cutoff = uni_coef %>% filter(pval.x < 0.01) %>% pull(rank.x) %>% max()
+y_cutoff = uni_coef %>% filter(pval.y < 0.01) %>% pull(rank.y) %>% max()
+
+ggplot(uni_coef, aes(rank.x, rank.y, label = rowname)) + geom_point() + geom_text_repel(size = 1) + geom_abline(intercept = 0, slope = 1, color = "grey", linetype = "dashed") +
+ # scale_y_continuous(trans="log2") + scale_x_continuous(trans="log2") + 
+  theme_pubr() + 
+  geom_hline(yintercept = y_cutoff) + 
+  geom_vline(xintercept = x_cutoff)
+```
+```{r}
+```
+
+
+
+
+
+
+```{r, fig.width = 2, fig.height = 2}
+#uni_coef = out_odds %>% pivot_wider(id_colsnames.from = rowname)
+```
+
+```{r}
+patient_counts_uni_tmp
+```
+
+
+
+```{r}
+# library(data.table)    # provides enhanced data.frame
+# library(ggplot2)       # plotting
+# library(glmnet)        # ridge, elastic net, and lasso 
+# 
+# isnv = patient_counts_uni_tmp %>% select(c(include,"n_var")) %>%
+#   select(!contains("0")) %>%
+#   select(!contains("FALSE")) %>%
+#   select(!contains("z_")) %>%
+#   select(!contains("high_counts")) %>% filter(n_var <= 30) %>%
+#   select(!contains("disease"))
+# 
+# 
+# 
+# 
+# ctmp = colnames(isnv)
+# isnv = isnv[sample(ctmp)]
+# #  glmnet requires x matrix (of predictors) and vector (values for y)
+# x = model.matrix(n_var~.,isnv)       # matrix of predictors
+# y = log10(isnv$n_var+1)                       # vector y values
+# 
+# # replicate  results
+# en_model <- cv.glmnet(x, y, alpha=0.7)        # 0 < alpha < 1 elastic net
+# best_lambda_en <- en_model$lambda.1se     # largest lambda in 1 SE
+# en_coef <- en_model$glmnet.fit$beta[,        # retrieve coefficients
+#               en_model$glmnet.fit$lambda     # at lambda.1se
+#               == best_lambda_en]
+# coef_en = data.table(elasticNet = en_coef)   # build table
+# coef_en[, feature := names(en_coef)]      # add feature names
+# to_plot_r = melt(coef_en                     # label table
+#                , id.vars='feature'
+#                , value.name = 'coefficient') %>% arrange(coefficient)
+# ggplot(data=to_plot_r,                       # plot coefficients
+#        aes(x=reorder(feature,coefficient), y=coefficient)) +
+#        geom_bar(stat='identity') + coord_flip() + theme(axis.text.y = element_text(size = 5))  
+```
+
+```{r}
+# glm(log10(n_var + 1) ~ age18under, data = patient_counts_uni_tmp %>% filter(n_var < 30)) %>%
+#   summary()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+# index = 0
+# for (i in colnames(patient_counts)[c(4,5,8:42)]) {
+#   flag = T
+#   index = index + 1
+#   formulas_tmp = formula(paste0("high_counts ~", i, "+ (1|run)"))
+#    m <- tryCatch(glmer(formulas_tmp, data = patient_counts %>% filter(admitted_hospital == 1), 
+#     family = binomial, 
+#     control = glmerControl(optimizer = "bobyqa"), nAGQ = 10), 
+#     error=function(e) flag<<-FALSE)
+#   if (!flag) next
+#   se <- sqrt(diag(vcov(m)))
+#   # table of estimates with 95% CI
+#   tab <- cbind(Est = fixef(m), LL = fixef(m) - 1.96 * se, 
+#                UL = fixef(m) + 1.96 * se) %>% as.data.frame
+#   out_odds_tmp = (tab) %>% 
+#     mutate(pval = summary(m)$coefficients[,4]) %>% 
+#     .[-1,] %>% rownames_to_column
+#   if (index == 1) {
+#     out_odds = out_odds_tmp
+#   } else {
+#     out_odds = rbind(out_odds, out_odds_tmp)
+#   }
+# }
+# out_odds = out_odds %>% arrange(pval)
+```
+
+
+```{r}
+# index = 0
+# patient_counts = patient_counts %>% mutate(ordinal_counts = cut(n_var, 
+#                                                                 breaks = seq(0,30,5)))
+# for (i in colnames(patient_counts)[c(4,5,8:41)]) {
+#   flag = T
+#   index = index + 1
+#   formulas_tmp = formula(paste0("ordinal_counts ~", i, "+ admitted_hospital + INSTRUMENT"))
+#    m <- tryCatch(mixed_model(formulas_tmp, 
+#                              random =  run + fraction1000xcoverage,
+#                              data = patient_counts, 
+#     family = binomial), 
+#     error=function(e) flag<<-FALSE)
+#   if (!flag) next
+#   coef_table = summary(m)$coef_table
+#   # table of estimates with 95% CI
+#   tab <- cbind(Est = coef_table[,1], 
+#                LL = coef_table[,1] - 1.96 * coef_table[,2], 
+#                UL = coef_table[,1] + 1.96 * coef_table[,2]) %>% as.data.frame
+#   out_odds_tmp = (tab) %>% 
+#     mutate(pval = coef_table[,4]) %>% 
+#     .[-1,] %>% rownames_to_column
+#   if (index == 1) {
+#     out_odds = out_odds_tmp
+#   } else {
+#     out_odds = rbind(out_odds, out_odds_tmp)
+#   }
+# }
+# out_odds = out_odds %>% arrange(pval) %>% distinct(rowname)
+# ```
+# 
+# ``` {r}
+# test =  glmer(high_counts ~ admitted_hospital + INSTRUMENT + CT + fraction_500x_coverage + (1|run), data = patient_counts, 
+#     family = binomial, 
+#     control = glmerControl(optimizer = "bobyqa"), nAGQ = 10)
+# summary(test)
+# ```
+# ```{r}
+# ggplot(patient_counts, 
+#        aes(y=log10(n_var), x=fraction_1000x_coverage)) + 
+#   geom_point( alpha = 0.01) + theme_pubr() + geom_smooth()
+```
+
+
+Number of variants is not normally distributed, so we cannot use linear regression.
+```{r}
+# index = 0
+# for (i in colnames(patient_counts)[c(4:41)]) {
+#   flag = T
+#   index = index + 1
+#   formulas_tmp = formula(paste0("high_counts ~", i, " + (1|run)"))
+#   m <- tryCatch(glmer(formulas_tmp, data = patient_counts %>% filter(admitted_hospital == 1), 
+#     family = binomial, 
+#     control = glmerControl(optimizer = "bobyqa"), nAGQ = 10), error=function(e) flag<<-FALSE)
+#   if (!flag) next
+#   se <- sqrt(diag(vcov(m)))
+#   # table of estimates with 95% CI
+#   tab <- cbind(Est = fixef(m), LL = fixef(m) - 1.96 * se, 
+#                UL = fixef(m) + 1.96 * se) %>% as.data.frame
+#   out_odds_tmp = exp(tab) %>% 
+#     mutate(pval = summary(m)$coefficients[,4]) %>% 
+#     .[-1,] %>% rownames_to_column
+#   print(index)
+#   if (index == 1) {
+#     out_odds = out_odds_tmp
+#   } else {
+#     out_odds = rbind(out_odds, out_odds_tmp)
+#   }
+# }
+```
+
+```{r}
+# test = glmer(high_counts ~ admitted_hospital + mAb + pui + 
+#                sex + CT + vaccine_status + (1|run), data = patient_counts, 
+#     family = binomial, 
+#     control = glmerControl(optimizer = "bobyqa"), nAGQ = 10)
+# ```
+# 
+# ```{r}
+# test = glmer(high_counts ~ INSTRUMENT + (1|run), data = patient_counts %>% 
+#                filter(ordering_clinic == "ED"), 
+#     family = binomial, 
+#     control = glmerControl(optimizer = "bobyqa"), nAGQ = 10)
+# summary(test)
+```
+
+
+```{r}
+# forest_input = summary(test)$coefficients %>% as.data.frame %>% 
+#   rownames_to_column() %>% .[-1,]
+# ggforestplot::forestplot(forest_input,
+#                          name = rowname, estimate = Estimate, se = `Std. Error`)
+
+```
+
+```{r}
+summary(test)
+```
+
+```{r}
+save_odds = save_odds %>% arrange(pval)
+# level_order <- rev(save_odds$rowname)
+# fp <- ggplot(data=save_odds, aes(x=factor(rowname, levels = level_order), 
+#                                  y=Est, ymin=LL, ymax=UL)) +
+#         geom_pointrange() + 
+#         geom_hline(yintercept=1, lty=2) +
+#         coord_trans(y="log") + ylim(0,2) +
+# # add a dotted line at x=1 after flip
+#         coord_flip() +  # flip coordinates (puts labels on y axis)
+#         
+#         theme_bw()
+# # use a white background +
+# 
+# print(fp)
+
+fwrite(save_odds, file = "odds_test.txt", sep = "\t")
+```
+
+
+
+```{r}
+# ALERT
+patient_counts %>% ggplot(aes(x = n_var)) + geom_density(aes(y = after_stat(count))) +
+  theme_pubr() + geom_vline(xintercept = seq(0,500,25), color = "grey", linetype = "dotted") + 
+  scale_x_continuous(breaks=seq(0,500,50)) +
+  scale_y_continuous(breaks=seq(0,1700, 500))
+```
+
+Less than
+
+```{r}
+# group by admitted_hospital (0,1)
+# plot on the x axis the minor counts > threshold
+# count the positions of the codon as 3 / total minor variants
+# conduct this analysis at 1% MAF and 10% MAF
+for (threshold in seq(0, 100, 1)) {
+    admitted_codon_out_tmp = patient_counts %>% group_by(admitted_hospital) %>%
+      summarize(
+        count3 = length(name[codon_pos == 3 & n_var > threshold]),
+        fraction = count3 / length(name[n_var > threshold])
+      ) %>%
+      mutate(threshold = threshold)
+    if (threshold == 0) {
+      admitted_codon_out = admitted_codon_out_tmp
+    } else {
+      admitted_codon_out = rbind(admitted_codon_out, admitted_codon_out_tmp)
+  }
+}
+
+admitted_plot = ggplot(admitted_codon_out, 
+                       aes(x = threshold, y = fraction, 
+                               color = admitted_hospital)) +
+  theme_pubr() + geom_line() + geom_point() +
+  geom_hline(yintercept = 0.33, color = "grey", linetype = "dashed") #+
+#   geom_vline(xintercept = seq(0,100,5), color = "grey", linetype = "dotted") +
+#   scale_x_continuous(breaks=seq(0,100,10))
+
+ xhist = 
+   axis_canvas(admitted_plot, axis = "x") + 
+   geom_col(data = admitted_codon_out,
+                  aes(x = threshold, y = count3),
+                  color = 'grey', stat = "identity")
+admitted_plot %>%
+   insert_xaxis_grob(xhist, grid::unit(0.5, "in"), position = "top") %>%
+   ggdraw()
+
+```
+
+
+Greater than
+
+```{r}
+# group by admitted_hospital (0,1)
+# plot on the x axis the minor counts > threshold
+# count the positions of the codon as 3 / total minor variants
+# conduct this analysis at 1% MAF and 10% MAF
+for (threshold in seq(0, 100, 1)) {
+    admitted_codon_out_tmp = patient_counts %>% group_by(admitted_hospital) %>%
+      summarize(
+        count3 = length(name[codon_pos == 3 & n_var < threshold]),
+        fraction = count3 / length(name[n_var < threshold])
+      ) %>%
+      mutate(threshold = threshold)
+    if (threshold == 0) {
+      admitted_codon_out = admitted_codon_out_tmp
+    } else {
+      admitted_codon_out = rbind(admitted_codon_out, admitted_codon_out_tmp)
+  }
+}
+
+admitted_plot = ggplot(admitted_codon_out, 
+                       aes(x = threshold, y = fraction, 
+                               color = admitted_hospital)) +
+  theme_pubr() + geom_line() + geom_point() +
+  geom_hline(yintercept = 0.33, color = "grey", linetype = "dashed") +
+  ylim(c(0.30,1))
+#   geom_vline(xintercept = seq(0,100,5), color = "grey", linetype = "dotted") +
+#   scale_x_continuous(breaks=seq(0,100,10))
+
+ xhist = 
+   axis_canvas(admitted_plot, axis = "x") + 
+   geom_col(data = admitted_codon_out,
+                  aes(x = threshold, y = count3),
+                  color = 'grey', stat = "identity")
+admitted_plot %>%
+   insert_xaxis_grob(xhist, grid::unit(0.5, "in"), position = "top") %>%
+   ggdraw()
+
+```
+
+BINS
+```{r}
+# group by admitted_hospital (0,1)
+# plot on the x axis the minor counts > threshold
+# count the positions of the codon as 3 / total minor variants
+# conduct this analysis at 1% MAF and 10% MAF
+
+patient_counts_tmp = patient_counts %>% filter(minorfreq > 0.1) %>% mutate(n_bin = cut(n_var, breaks=seq(0,100,5)))
+index = 0
+cuts = patient_counts_tmp %>% select(n_bin) %>% arrange(n_bin) %>% unique %>% .[[1]]
+for (threshold in cuts) {
+  index = index + 1
+    admitted_codon_out_tmp = patient_counts_tmp %>% 
+      group_by(admitted_hospital) %>%
+      summarize(
+        count3 = length(name[codon_pos == 3 & n_bin == threshold]),
+        fraction = count3 / length(name[n_bin == threshold])
+      ) %>%
+      mutate(threshold = threshold)
+    if (index == 1) {
+      admitted_codon_out = admitted_codon_out_tmp
+    } else {
+      admitted_codon_out = rbind(admitted_codon_out, admitted_codon_out_tmp)
+  }
+}
+
+admitted_plot = ggplot(admitted_codon_out, 
+                       aes(x = threshold, y = fraction, 
+                               color = admitted_hospital)) +
+  theme_pubr() + geom_line() + geom_point() +
+  geom_hline(yintercept = 0.33, color = "grey", linetype = "dashed") +
+  ylim(c(0.30,.4))
+#   geom_vline(xintercept = seq(0,100,5), color = "grey", linetype = "dotted") +
+#   scale_x_continuous(breaks=seq(0,100,10))
+
+ xhist = 
+   axis_canvas(admitted_plot, axis = "x") + 
+   geom_col(data = admitted_codon_out,
+                  aes(x = threshold, y = count3),
+                  color = 'grey', stat = "identity")
+admitted_plot %>%
+   insert_xaxis_grob(xhist, grid::unit(0.5, "in"), position = "top") %>%
+   ggdraw()
+```
+
+
+```{r}
+#add patient metadata to sample minor variant richness
+p <- left_join(for_patient_analysis, patient_data) %>% droplevels() %>% mutate(vocAlpha=if_else(startsWith(scorpio_call, "Alpha"),1,0), vocDelta=if_else(startsWith(scorpio_call, "Delta"),1,0)) %>% mutate(vocAlpha=as.factor(vocAlpha), vocDelta=as.factor(vocDelta))
+```
+
+```{r}
+#Random Forest model of patient characteristics for classifying low-CT samples as having high or low minor variant richness
+p <- p %>% mutate(var_level=if_else(n_var<=median_var, "low","high")) #%>% # median is 5 mutate(var_level=as.factor(var_level)) 
+# 
+# p_select <- p  %>% select(age18under, age18to54, age55plus, sex, ethnicity, chronic_lung_disease, chronic_liver_disease, chronic_kidney_disease, chronic_heart_disease, hypertension, diabetes, cancer, obesity, transplant_patient, plasma, mAb, vaccine_status, admitted_hospital,surveillance_sample, var_level) 
+# 
+# p.rf<-randomForest(var_level~.,
+#                                data=p_select, 
+#                                ntree=1000,
+#                                 mtry=5,
+#                                importance = T) 
+# 
+# importance.randomForest <- as.data.frame(randomForest::importance(p.rf))
+# 
+# importance.randomForest<-importance.randomForest %>% arrange(desc(MeanDecreaseAccuracy))
+# importance.randomForest
+# 
+# rf.roc<-roc(p_select$var_level,p.rf$votes[,2], levels=c(case="high",control="low"))
+# auc(rf.roc)
+```
+## Association between patient hospitalization and high minor variant richness
+
+```{r}
+# categories<-p %>% mutate(minor_greater_0=if_else(n_var>0,'yes','no')) %>% mutate(minor_greater_5=if_else(n_var>5,'yes','no')) %>% mutate(minor_greater_10=if_else(n_var>10,'yes','no'),minor_greater_50=if_else(n_var>50,'yes','no') ) 
+# categories1<-categories %>% group_by(admitted_hospital, minor_greater_0) %>% tally() %>% ggplot(aes(x=admitted_hospital, y=n, fill=minor_greater_0)) + geom_bar(stat="identity") + scale_fill_manual(values=c("gray","black")) + theme_bw() + labs(fill="At least 1 minor variant")
+# categories2<-categories %>% group_by(admitted_hospital, minor_greater_5) %>% tally() %>% ggplot(aes(x=admitted_hospital, y=n, fill=minor_greater_5)) + geom_bar(stat="identity") + scale_fill_manual(values=c("gray","black")) + theme_bw() + labs(fill="More than 5 minor variants")
+# categories3<-categories %>% group_by(admitted_hospital, minor_greater_10) %>% tally() %>% ggplot(aes(x=admitted_hospital, y=n, fill=minor_greater_10)) + geom_bar(stat="identity") + scale_fill_manual(values=c("gray","black")) + theme_bw() + labs(fill="More than 10 minor variants")
+# plot_grid(categories1, categories2, categories3, nrow=3, align="hv", axis="btlr")
+```
+```{r}
+#categories %>% group_by(admitted_hospital, minor_greater_10) %>% tally()
+```
+
+```{r}
+# line plot threshold greater than from 0 to 30, by 5
+# y axis is from 0 to 1 as a probability
+# x axis is the threshold
+# two lines, fraction of total that are admitted and fraction of total that are not
+# that have more than that x axis threshold minor variants
+
+# create the dataframe first
+for (threshold in seq(0, 50, 5)) {
+    threshold_out_tmp = p %>% group_by(admitted_hospital) %>%
+      summarize(number_greater_than_threshold = length(n_var[n_var > threshold]),
+                fraction_greater_than_threshold = 
+                  length(n_var[n_var > threshold]) / length(n_var)) %>%
+      mutate(threshold = threshold)
+    if (threshold == 0) {
+      threshold_out = threshold_out_tmp
+    } else {
+      threshold_out = rbind(threshold_out, threshold_out_tmp)
+  }
+}
+```
+
+
+```{r, fig.width = 2, fig.height = 2}
+ggplot(threshold_out, aes(x = threshold, y = fraction_greater_than_threshold, 
+                          shape = admitted_hospital, color = admitted_hospital)) + 
+  theme_pubr() + geom_line() + 
+  geom_point() + scale_x_continuous(breaks=seq(0,50,5)) + 
+  geom_text_repel(aes(label = number_greater_than_threshold))
+```
+
+```{r}
+# UNIVARIATE TABLE
+
+```
+
+
+```{r}
+hospitalization<-table(p$admitted_hospital,p$var_level) 
+hospitalization
+```
+
+```{r}
+chisq.test(hospitalization)
+```
+
+```{r}
+oddsratio(hospitalization, rev="columns")
+```
+
+```{r}
+hosp_fig<-p %>% ggplot(aes(x=CT, y=log10(n_var+1), color=admitted_hospital, fill_admitted_hospital)) + geom_point(alpha=0.2)  + scale_fill_manual(values=c("gray","darkred"), labels=c("Not hospitalized","Hospitalized")) + geom_smooth(method=lm) + scale_color_manual(values=c("black","darkred"), labels=c("Not hospitalized","Hospitalized")) + theme_bw() + theme(legend.position="bottom", legend.direction="vertical", legend.title=element_blank()) + xlab("Ct value") + ylab("log10(No. minor variants + 1)") + ylim(0,2.6); hosp_fig
+```
+
+```{r}
+#linear mixed-effect model with sequencing run as random effect
+lme(log10(n_var+1) ~ CT*admitted_hospital, random=~1|run,
+            data=p) %>% anova() 
+```
+
+# Other ways of examining disease severity: vaccination status and healthcare worker surveillance
+
+```{r}
+#when did most cases among vaccinated patients occur?
+table(p$collection_month, p$vaccine_status)
+```
+
+```{r}
+#to see effect of vaccination (as a correlate of disease severity): limit to later than July and only non-hospitalized patients
+vax_status_subset<- p %>%
+  filter(collection_date>="2021-07-01") %>% filter(admitted_hospital==0) 
+vax_fig<-vax_status_subset %>% ggplot(aes(x=CT, y=log10(n_var+1), color=vaccine_status, fill=vaccine_status)) + geom_point(alpha=0.2)  + scale_fill_manual(values=c("gray","turquoise"), labels=c("Not fully vaccinated","Fully vaccinated")) + geom_smooth(method=lm) + scale_color_manual(values=c("black","turquoise"), labels=c("Not fully vaccinated","Fully vaccinated")) + theme_bw() + theme(legend.position="bottom", legend.title=element_blank(), legend.direction="vertical") + xlab("Ct value") + ylab("log10(No. minor variants + 1)") + ylim(0,2.6)
+```
+
+```{r}
+lme(log10(n_var+1) ~ CT*vaccine_status, random=~1|run,
+            data=vax_status_subset) %>% anova() 
+```
+
+```{r}
+#healthcare worker surveillance (presumed mostly asymptomatic) vs non-hospitalized patients (presumed mostly symptomatic) 
+surv_subset <- p %>%
+  filter(admitted_hospital==0) %>% filter(!(surveillance_sample==1 & pui=="PUI")) #exclude HCW who were patients
+surv_fig<-surv_subset %>% ggplot(aes(x=CT, y=log10(n_var+1), color=surveillance_sample, fill=surveillance_sample)) + geom_point(alpha=0.2) + scale_fill_manual(values=c("gray","darkgreen"), labels=c("Not surveillance","HCW surveillance")) + geom_smooth(method=lm) + scale_color_manual(values=c("black","darkgreen"), labels=c("Not surveillance","HCW surveillance")) + theme_bw() + xlab("Ct value") + ylab("log10(No. minor variants + 1)") + theme(legend.title=element_blank(), legend.position="bottom", legend.direction="vertical") + xlab("Ct value") + ylab("log10(No. minor variants + 1)") + ylim(0,2.6)
+```
+
+```{r}
+lme(log10(n_var+1) ~ CT*surveillance_sample, random=~1|run,
+            data=surv_subset) %>% anova() 
+```
+
+```{r}
+#FIG 2
+plot_grid(hosp_fig, vax_fig, surv_fig, ncol=3, labels=c("a","b","c"), align="hv", axis="btlr")
+```
+
+
+```{r}
+#LASSO regression model including all sample and patient characteristics to explain minor variant richness
+p_sub<- p %>% left_join(mcov_samples_filtered) #to add info about coverage
+y<-log10(p_sub$n_var+1)
+x<-data.matrix(p_sub[, c('age18under','age55plus','sex','chronic_lung_disease', 'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 'hypertension', 'diabetes', 'cancer', 'obesity', 'plasma', 'mAb', 'admitted_hospital','vaccine_status','vocAlpha','vocDelta','collection_month','surveillance_sample','CT','median_coverage','run')])
+
+cv_model <- cv.glmnet(x, y, alpha = 1, nfolds=100)
+plot(cv_model) 
+best_model <- glmnet(x, y, alpha = 1, lambda = cv_model$lambda.min)
+best_model$dev.ratio
+
+lasso1<-coef(best_model) %>% as.matrix() %>% data.frame() %>% rownames_to_column() %>% select(factor=rowname, coefficient=s0) %>% filter(factor!="(Intercept)") %>% arrange(desc(coefficient)) %>% ggplot(aes(x=coefficient, y=fct_reorder(factor,coefficient))) + geom_bar(stat="identity", fill="#E2D200", color="gray") + theme_bw() + ylab("Factor") + xlab("Coefficient")
+lasso1
+
+```
+
+
+```{r}
+#same model excluding any factors with a temporal signal (VOC, vaccination, collection month, run)
+y2<-log10(p_sub$n_var+1)
+x2<-data.matrix(p_sub[, c('age18under','age55plus','sex','chronic_lung_disease', 
+                          'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 
+                          'hypertension', 'diabetes', 'cancer', 'obesity', 'plasma', 'mAb', 
+                          'admitted_hospital', 'surveillance_sample', 'CT', 'median_coverage')])
+
+cv_model_2 <- cv.glmnet(x2, y2, alpha = 1, nfolds=100)
+plot(cv_model_2) 
+best_model_2 <- glmnet(x2, y2, alpha = 1, lambda = cv_model$lambda.min)
+best_model_2$dev.ratio
+
+lasso2<-coef(best_model_2) %>% as.matrix() %>% data.frame() %>% rownames_to_column() %>% 
+  select(factor=rowname, coefficient=s0) %>% filter(factor!="(Intercept)") %>% 
+  arrange(desc(coefficient)) %>% ggplot(aes(x=coefficient, y=fct_reorder(factor,coefficient))) + 
+  geom_bar(stat="identity", fill="#E2D200", color="black") + theme_bw() + ylab("Factor") + 
+  xlab("Coefficient")
+
+plot_grid(lasso1, lasso2, ncol=2, labels=c("a","b"))
+```
+
+
+```{r}
+categories3<-categories %>% group_by(admitted_hospital, minor_greater_10) %>% tally() %>% ggplot(aes(x=admitted_hospital, y=n, fill=minor_greater_10)) + geom_bar(stat="identity") + scale_fill_manual(values=c("gray","black")) + theme_bw()
+```
+
+
+```{r}
+#when were hospitalized patient samples taken?
+p %>% filter(admitted_hospital==1) %>% group_by(ordering_clinic) %>% tally()
+```
+
+```{r}
+p %>% filter(admitted_hospital==0) %>% group_by(ordering_clinic) %>% tally()
+```
+
+```{r}
+inclusion_table<-mcov_samples %>% select(MCoVNumber, run) %>% mutate(first_filter=if_else(MCoVNumber %in% mcov_samples_filtered$MCoVNumber, 1, 0)) %>% mutate(second_filter=if_else(MCoVNumber %in% p$MCoVNumber, 1,0)) 
+write.csv(inclusion_table, "inclusion_table_072022.csv", row.names=FALSE)
+```

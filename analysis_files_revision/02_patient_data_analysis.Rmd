@@ -5,11 +5,16 @@ output: html_notebook
 
 # Patient factors analysis 
 
-What patient characteristics (and secondarily, sample/technical characteristics) are associated with high minor variant richness?
+```{r}
+# Load common functions, libraries, and -- data/variables from 01_load_new_samples data 
+source("./scripts/startup.R")
+source("./scripts/load_data.R")
+```
+
 
 ```{r}
 #limiting to low-Ct samples
-for_patient_analysis<-samples_n_var %>% filter(INSTRUMENT_RESULT<26)  %>% select(MCoVNumber, n_var, scorpio_call) 
+for_patient_analysis <- samples_n_var %>% filter(INSTRUMENT_RESULT<26) %>% select(MCoVNumber, n_var, scorpio_call) 
 for_patient_analysis %>% pull(n_var) %>% summary
 ```
 
@@ -19,59 +24,108 @@ median_var<-for_patient_analysis %>% pull(n_var) %>% median()
 ```
 
 ```{r}
-patient_data<-read.csv("sample_and_patient_data.csv") %>% mutate(MCoVNumber=str_remove(mcov_id, "-")) %>% mutate(collection_date=as.Date(COLLECTION_DT, "%m/%d/%y")) %>% mutate(collection_month=format(as.Date(collection_date), "%Y-%m")) %>%
+patient_data <- fread("sample_and_patient_data.csv",data.table=F) %>% mutate(MCoVNumber=str_remove(mcov_id, "-")) %>% mutate(collection_date=as.Date(COLLECTION_DT, "%m/%d/%y")) %>% mutate(collection_month=format(as.Date(collection_date), "%Y-%m")) %>%
   mutate(CT=ifelse(INSTRUMENT_RESULT<50, INSTRUMENT_RESULT, NA_integer_)) %>% mutate(vaccine_status=if_else(Vaccine_Status=="No vaccine"|Vaccine_Status==">7 days past 1st Vaccine",0,1)) %>%
-  mutate(age18under=if_else(Age_Group=="00-17",1,0)) %>% mutate(age18to54=if_else(Age_Group=="18-54",1,0)) %>% mutate(age55plus=if_else(Age_Group=="55-64"|Age_Group=="65+",1,0)) %>%
-  select(MCoVNumber, collection_date, collection_month, run=run_group, CT, ordering_clinic=ORDERING_CLINIC_TYPE,pui=PUI, age18under, age18to54, age55plus, sex=SEX, ethnicity=Ethnicity, obesity=Obesity_YN, chronic_lung_disease=Chronic_Lung_Disease_YN, chronic_liver_disease=Chronic_Liver_Disease_YN, surveillance_sample=IS_SURVEILLANCE, chronic_heart_disease=Chronic_Heart_Disease_YN,chronic_kidney_disease=Chronic_Kidney_Disease_YN, hypertension=Hypertension_YN, diabetes=Diabetes_YN, cancer=Cancer_YN, hiv=HIV_YN, transplant_patient=Transplant_Patient, vaccine_status, admitted_hospital=Admitted_YN, highest_level=HIGHEST_LEVEL_OF_CARE, max_respiratory_support=MaxRespiratorySupport, mAb=mAb_YN, plasma=Plasma_YN)
+  mutate(age18under=if_else(Age_Group=="00-17",1,0)) %>% 
+  mutate(age18to54=if_else(Age_Group=="18-54",1,0)) %>% 
+  mutate(age55plus=if_else(Age_Group=="55-64"|Age_Group=="65+",1,0)) %>%
+  select(MCoVNumber, collection_date, collection_month, run=run_group, CT, 
+         ordering_clinic=ORDERING_CLINIC_TYPE,pui=PUI, age18under, age18to54, 
+         age55plus, sex=SEX, ethnicity=Ethnicity, obesity=Obesity_YN, 
+         chronic_lung_disease=Chronic_Lung_Disease_YN, 
+         chronic_liver_disease=Chronic_Liver_Disease_YN, 
+         surveillance_sample=IS_SURVEILLANCE, chronic_heart_disease=Chronic_Heart_Disease_YN,
+         chronic_kidney_disease=Chronic_Kidney_Disease_YN, 
+         hypertension=Hypertension_YN, diabetes=Diabetes_YN, 
+         cancer=Cancer_YN, hiv=HIV_YN, transplant_patient=Transplant_Patient, 
+         vaccine_status, admitted_hospital=Admitted_YN, highest_level=HIGHEST_LEVEL_OF_CARE, 
+         max_respiratory_support=MaxRespiratorySupport, mAb=mAb_YN, plasma=Plasma_YN)
 
-factor_columns<- c("collection_month","run","ordering_clinic","pui","age18under","age18to54", "age55plus","sex","ethnicity","obesity","surveillance_sample", "chronic_lung_disease","chronic_liver_disease","chronic_heart_disease","chronic_kidney_disease","hypertension","diabetes","cancer","hiv","transplant_patient","vaccine_status","admitted_hospital","highest_level","max_respiratory_support","mAb","plasma") 
+factor_columns <- c("collection_month","run","ordering_clinic", "pui", "age18under", 
+                    "age18to54", "age55plus","sex","ethnicity","obesity","surveillance_sample", 
+                    "chronic_lung_disease","chronic_liver_disease","chronic_heart_disease",
+                    "chronic_kidney_disease","hypertension","diabetes","cancer","hiv",
+                    "transplant_patient","vaccine_status","admitted_hospital",
+                    "highest_level","max_respiratory_support","mAb","plasma") 
 
-patient_data[factor_columns]<-lapply(patient_data[factor_columns], factor)
+patient_data[factor_columns] <- lapply(patient_data[factor_columns], factor)
 
 patient_data
 ```
 
 ```{r}
 #add patient metadata to sample minor variant richness
-p<-left_join(for_patient_analysis, patient_data) %>% droplevels() %>% mutate(vocAlpha=if_else(startsWith(scorpio_call, "Alpha"),1,0), vocDelta=if_else(startsWith(scorpio_call, "Delta"),1,0)) %>% mutate(vocAlpha=as.factor(vocAlpha), vocDelta=as.factor(vocDelta))
+p <- left_join(for_patient_analysis, patient_data) %>% droplevels() %>% mutate(vocAlpha=if_else(startsWith(scorpio_call, "Alpha"),1,0), vocDelta=if_else(startsWith(scorpio_call, "Delta"),1,0)) %>% mutate(vocAlpha=as.factor(vocAlpha), vocDelta=as.factor(vocDelta))
 ```
 
 ```{r}
 #Random Forest model of patient characteristics for classifying low-CT samples as having high or low minor variant richness
-p <- p %>% mutate(var_level=if_else(n_var<=median_var, "low","high")) %>% mutate(var_level=as.factor(var_level)) 
-
-p_select <- p  %>% select(age18under, age18to54, age55plus, sex, ethnicity, chronic_lung_disease, chronic_liver_disease, chronic_kidney_disease, chronic_heart_disease, hypertension, diabetes, cancer, obesity, transplant_patient, plasma, mAb, vaccine_status, admitted_hospital,surveillance_sample, var_level) 
-
-p.rf<-randomForest(var_level~.,
-                               data=p_select, 
-                               ntree=1000,
-                                mtry=5,
-                               importance = T) 
-
-importance.randomForest <- as.data.frame(randomForest::importance(p.rf))
-
-importance.randomForest<-importance.randomForest %>% arrange(desc(MeanDecreaseAccuracy))
-importance.randomForest
-
-rf.roc<-roc(p_select$var_level,p.rf$votes[,2], levels=c(case="high",control="low"))
-auc(rf.roc)
+p <- p %>% mutate(var_level=if_else(n_var<=median_var, "low","high")) #%>% # median is 5 mutate(var_level=as.factor(var_level)) 
+# 
+# p_select <- p  %>% select(age18under, age18to54, age55plus, sex, ethnicity, chronic_lung_disease, chronic_liver_disease, chronic_kidney_disease, chronic_heart_disease, hypertension, diabetes, cancer, obesity, transplant_patient, plasma, mAb, vaccine_status, admitted_hospital,surveillance_sample, var_level) 
+# 
+# p.rf<-randomForest(var_level~.,
+#                                data=p_select, 
+#                                ntree=1000,
+#                                 mtry=5,
+#                                importance = T) 
+# 
+# importance.randomForest <- as.data.frame(randomForest::importance(p.rf))
+# 
+# importance.randomForest<-importance.randomForest %>% arrange(desc(MeanDecreaseAccuracy))
+# importance.randomForest
+# 
+# rf.roc<-roc(p_select$var_level,p.rf$votes[,2], levels=c(case="high",control="low"))
+# auc(rf.roc)
 ```
 ## Association between patient hospitalization and high minor variant richness
 
 ```{r}
-categories<-p %>% mutate(minor_greater_0=if_else(n_var>0,'yes','no')) %>% mutate(minor_greater_5=if_else(n_var>5,'yes','no')) %>% mutate(minor_greater_10=if_else(n_var>10,'yes','no'),minor_greater_50=if_else(n_var>50,'yes','no') ) 
-categories1<-categories %>% group_by(admitted_hospital, minor_greater_0) %>% tally() %>% ggplot(aes(x=admitted_hospital, y=n, fill=minor_greater_0)) + geom_bar(stat="identity") + scale_fill_manual(values=c("gray","black")) + theme_bw() + labs(fill="At least 1 minor variant")
-categories2<-categories %>% group_by(admitted_hospital, minor_greater_5) %>% tally() %>% ggplot(aes(x=admitted_hospital, y=n, fill=minor_greater_5)) + geom_bar(stat="identity") + scale_fill_manual(values=c("gray","black")) + theme_bw() + labs(fill="More than 5 minor variants")
-categories3<-categories %>% group_by(admitted_hospital, minor_greater_10) %>% tally() %>% ggplot(aes(x=admitted_hospital, y=n, fill=minor_greater_10)) + geom_bar(stat="identity") + scale_fill_manual(values=c("gray","black")) + theme_bw() + labs(fill="More than 10 minor variants")
-plot_grid(categories1, categories2, categories3, nrow=3, align="hv", axis="btlr")
+# categories<-p %>% mutate(minor_greater_0=if_else(n_var>0,'yes','no')) %>% mutate(minor_greater_5=if_else(n_var>5,'yes','no')) %>% mutate(minor_greater_10=if_else(n_var>10,'yes','no'),minor_greater_50=if_else(n_var>50,'yes','no') ) 
+# categories1<-categories %>% group_by(admitted_hospital, minor_greater_0) %>% tally() %>% ggplot(aes(x=admitted_hospital, y=n, fill=minor_greater_0)) + geom_bar(stat="identity") + scale_fill_manual(values=c("gray","black")) + theme_bw() + labs(fill="At least 1 minor variant")
+# categories2<-categories %>% group_by(admitted_hospital, minor_greater_5) %>% tally() %>% ggplot(aes(x=admitted_hospital, y=n, fill=minor_greater_5)) + geom_bar(stat="identity") + scale_fill_manual(values=c("gray","black")) + theme_bw() + labs(fill="More than 5 minor variants")
+# categories3<-categories %>% group_by(admitted_hospital, minor_greater_10) %>% tally() %>% ggplot(aes(x=admitted_hospital, y=n, fill=minor_greater_10)) + geom_bar(stat="identity") + scale_fill_manual(values=c("gray","black")) + theme_bw() + labs(fill="More than 10 minor variants")
+# plot_grid(categories1, categories2, categories3, nrow=3, align="hv", axis="btlr")
 ```
 ```{r}
-categories %>% group_by(admitted_hospital, minor_greater_10) %>% tally()
+#categories %>% group_by(admitted_hospital, minor_greater_10) %>% tally()
 ```
+
 ```{r}
+# line plot threshold greater than from 0 to 30, by 5
+# y axis is from 0 to 1 as a probability
+# x axis is the threshold
+# two lines, fraction of total that are admitted and fraction of total that are not
+# that have more than that x axis threshold minor variants
 
+# create the dataframe first
+for (threshold in seq(0, 50, 5)) {
+    threshold_out_tmp = p %>% group_by(admitted_hospital) %>%
+      summarize(number_greater_than_threshold = length(n_var[n_var > threshold]),
+                fraction_greater_than_threshold = 
+                  length(n_var[n_var > threshold]) / length(n_var)) %>%
+      mutate(threshold = threshold)
+    if (threshold == 0) {
+      threshold_out = threshold_out_tmp
+    } else {
+      threshold_out = rbind(threshold_out, threshold_out_tmp)
+  }
+}
 ```
 
+
+```{r, fig.width = 2, fig.height = 2}
+ggplot(threshold_out, aes(x = threshold, y = fraction_greater_than_threshold, 
+                          shape = admitted_hospital, color = admitted_hospital)) + 
+  theme_pubr() + geom_line() + 
+  geom_point() + scale_x_continuous(breaks=seq(0,50,5)) + 
+  geom_text_repel(aes(label = number_greater_than_threshold))
+```
+
+```{r}
+# UNIVARIATE TABLE
+
+```
 
 
 ```{r}
@@ -88,7 +142,7 @@ oddsratio(hospitalization, rev="columns")
 ```
 
 ```{r}
-hosp_fig<-p %>% ggplot(aes(x=CT, y=log10(n_var+1), color=admitted_hospital, fill_admitted_hospital)) + geom_point(alpha=0.2)  + scale_fill_manual(values=c("gray","darkred"), labels=c("Not hospitalized","Hospitalized")) + geom_smooth(method=lm) + scale_color_manual(values=c("black","darkred"), labels=c("Not hospitalized","Hospitalized")) + theme_bw() + theme(legend.position="bottom", legend.direction="vertical", legend.title=element_blank()) + xlab("Ct value") + ylab("log10(No. minor variants + 1)") + ylim(0,2.6)
+hosp_fig<-p %>% ggplot(aes(x=CT, y=log10(n_var+1), color=admitted_hospital, fill_admitted_hospital)) + geom_point(alpha=0.2)  + scale_fill_manual(values=c("gray","darkred"), labels=c("Not hospitalized","Hospitalized")) + geom_smooth(method=lm) + scale_color_manual(values=c("black","darkred"), labels=c("Not hospitalized","Hospitalized")) + theme_bw() + theme(legend.position="bottom", legend.direction="vertical", legend.title=element_blank()) + xlab("Ct value") + ylab("log10(No. minor variants + 1)") + ylim(0,2.6); hosp_fig
 ```
 
 ```{r}
@@ -136,7 +190,7 @@ plot_grid(hosp_fig, vax_fig, surv_fig, ncol=3, labels=c("a","b","c"), align="hv"
 
 ```{r}
 #LASSO regression model including all sample and patient characteristics to explain minor variant richness
-p_sub<- p %>% left_join(mcov_samples) #to add info about coverage
+p_sub<- p %>% left_join(mcov_samples_filtered) #to add info about coverage
 y<-log10(p_sub$n_var+1)
 x<-data.matrix(p_sub[, c('age18under','age55plus','sex','chronic_lung_disease', 'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 'hypertension', 'diabetes', 'cancer', 'obesity', 'plasma', 'mAb', 'admitted_hospital','vaccine_status','vocAlpha','vocDelta','collection_month','surveillance_sample','CT','median_coverage','run')])
 
@@ -144,34 +198,38 @@ cv_model <- cv.glmnet(x, y, alpha = 1, nfolds=100)
 plot(cv_model) 
 best_model <- glmnet(x, y, alpha = 1, lambda = cv_model$lambda.min)
 best_model$dev.ratio
-```
-```{r}
-lasso1<-coef(best_model) %>% as.matrix() %>% data.frame() %>% rownames_to_column() %>% rename(factor=rowname, coefficient=s0) %>% filter(factor!="(Intercept)") %>% arrange(desc(coefficient)) %>% ggplot(aes(x=coefficient, y=fct_reorder(factor,coefficient))) + geom_bar(stat="identity", fill="#E2D200", color="gray") + theme_bw() + ylab("Factor") + xlab("Coefficient")
+
+lasso1<-coef(best_model) %>% as.matrix() %>% data.frame() %>% rownames_to_column() %>% select(factor=rowname, coefficient=s0) %>% filter(factor!="(Intercept)") %>% arrange(desc(coefficient)) %>% ggplot(aes(x=coefficient, y=fct_reorder(factor,coefficient))) + geom_bar(stat="identity", fill="#E2D200", color="gray") + theme_bw() + ylab("Factor") + xlab("Coefficient")
 lasso1
+
 ```
+
 
 ```{r}
 #same model excluding any factors with a temporal signal (VOC, vaccination, collection month, run)
 y2<-log10(p_sub$n_var+1)
-x2<-data.matrix(p_sub[, c('age18under','age55plus','sex','chronic_lung_disease', 'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 'hypertension', 'diabetes', 'cancer', 'obesity', 'plasma', 'mAb', 'admitted_hospital', 'surveillance_sample', 'CT', 'median_coverage')])
+x2<-data.matrix(p_sub[, c('age18under','age55plus','sex','chronic_lung_disease', 
+                          'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 
+                          'hypertension', 'diabetes', 'cancer', 'obesity', 'plasma', 'mAb', 
+                          'admitted_hospital', 'surveillance_sample', 'CT', 'median_coverage')])
 
 cv_model_2 <- cv.glmnet(x2, y2, alpha = 1, nfolds=100)
 plot(cv_model_2) 
 best_model_2 <- glmnet(x2, y2, alpha = 1, lambda = cv_model$lambda.min)
 best_model_2$dev.ratio
-```
-```{r}
-lasso2<-coef(best_model_2) %>% as.matrix() %>% data.frame() %>% rownames_to_column() %>% rename(factor=rowname, coefficient=s0) %>% filter(factor!="(Intercept)") %>% arrange(desc(coefficient)) %>% ggplot(aes(x=coefficient, y=fct_reorder(factor,coefficient))) + geom_bar(stat="identity", fill="#E2D200", color="black") + theme_bw() + ylab("Factor") + xlab("Coefficient")
-```
 
-```{r}
-#SUPP FIG 5
+lasso2<-coef(best_model_2) %>% as.matrix() %>% data.frame() %>% rownames_to_column() %>% 
+  select(factor=rowname, coefficient=s0) %>% filter(factor!="(Intercept)") %>% 
+  arrange(desc(coefficient)) %>% ggplot(aes(x=coefficient, y=fct_reorder(factor,coefficient))) + 
+  geom_bar(stat="identity", fill="#E2D200", color="black") + theme_bw() + ylab("Factor") + 
+  xlab("Coefficient")
+
 plot_grid(lasso1, lasso2, ncol=2, labels=c("a","b"))
 ```
 
+
 ```{r}
 categories3<-categories %>% group_by(admitted_hospital, minor_greater_10) %>% tally() %>% ggplot(aes(x=admitted_hospital, y=n, fill=minor_greater_10)) + geom_bar(stat="identity") + scale_fill_manual(values=c("gray","black")) + theme_bw()
-
 ```
 
 
@@ -185,7 +243,7 @@ p %>% filter(admitted_hospital==0) %>% group_by(ordering_clinic) %>% tally()
 ```
 
 ```{r}
-#inclusion_table<-mcov_samples %>% select(MCoVNumber, run) %>% mutate(first_filter=if_else(MCoVNumber %in% #mcov_samples_filtered$MCoVNumber, 1, 0)) %>% mutate(second_filter=if_else(MCoVNumber %in% p$MCoVNumber, 1,0)) 
-#write.csv(inclusion_table, "inclusion_table_072022.csv", row.names=FALSE)
+inclusion_table<-mcov_samples %>% select(MCoVNumber, run) %>% mutate(first_filter=if_else(MCoVNumber %in% mcov_samples_filtered$MCoVNumber, 1, 0)) %>% mutate(second_filter=if_else(MCoVNumber %in% p$MCoVNumber, 1,0)) 
+write.csv(inclusion_table, "inclusion_table_072022.csv", row.names=FALSE)
 ```
 
