@@ -187,7 +187,7 @@ setdiff(mutations_of_interest$mutation_name, mutations_present$mutation_name)
 #SUPP FIG 11
 obermeyer = mutations_present %>% left_join(mutations_of_interest) %>% ggplot(aes(x=COLLECTION_DT, y=n)) + geom_bar(stat="identity", fill="black", color="black") + facet_wrap(mutation_name~ntpos) + theme_pubr() + theme(axis.text.x=element_text(angle=90), strip.background = element_rect(fill="lightblue")) + xlab("Collection Date") + ylab("No. samples") + scale_x_date(minor_breaks="1 month")
 
-ggsave("ggsave/obermeyer.pdf", plot = )
+ggsave("ggsave/obermeyer.pdf", plot = obermeyer, width = 6, height = 5)
 
 ```
 
