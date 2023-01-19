@@ -6,36 +6,23 @@ output: html_notebook
 # Effects on patient analysis of using different detection thresholds
 ## Patient data - used for all analyses
 
-```{r}
-library(tidyverse)
-library(cowplot)
-library(randomForest)
-library(pROC)
-library(pheatmap)
-library(epitools)
-library(glmnet)
-library(nlme)
-library(ggforce)
-library(gggenes)
-library(viridis)
-```
+# FUNCTION OF COVERAGE: Higher coverage to top 75%
+# FUNCTION OF MAF: MAF increased to top 75%
+# FUNCTION OF TITER: CT < 20 to top 75%
+
+# FUNCTION OF QUADRANTS: CT > 35; Counts > 100
 
 ```{r}
-patient_data<-read.csv("sample_and_patient_data.csv") %>% mutate(MCoVNumber=str_remove(mcov_id, "-")) %>% mutate(collection_date=as.Date(COLLECTION_DT, "%m/%d/%y")) %>% mutate(collection_month=format(as.Date(collection_date), "%Y-%m")) %>%
-  mutate(CT=ifelse(INSTRUMENT_RESULT<50, INSTRUMENT_RESULT, NA_integer_)) %>% mutate(vaccine_status=if_else(Vaccine_Status=="No vaccine"|Vaccine_Status==">7 days past 1st Vaccine",0,1)) %>%
-  mutate(age18under=if_else(Age_Group=="00-17",1,0)) %>% mutate(age18to54=if_else(Age_Group=="18-54",1,0)) %>% mutate(age55plus=if_else(Age_Group=="55-64"|Age_Group=="65+",1,0)) %>%
-  select(MCoVNumber, collection_date, collection_month, run=run_group, CT, ordering_clinic=ORDERING_CLINIC_TYPE,pui=PUI, age18under, age18to54, age55plus, sex=SEX, ethnicity=Ethnicity, obesity=Obesity_YN, chronic_lung_disease=Chronic_Lung_Disease_YN, chronic_liver_disease=Chronic_Liver_Disease_YN, surveillance_sample=IS_SURVEILLANCE, chronic_heart_disease=Chronic_Heart_Disease_YN,chronic_kidney_disease=Chronic_Kidney_Disease_YN, hypertension=Hypertension_YN, diabetes=Diabetes_YN, cancer=Cancer_YN, hiv=HIV_YN, transplant_patient=Transplant_Patient, vaccine_status, admitted_hospital=Admitted_YN, highest_level=HIGHEST_LEVEL_OF_CARE, max_respiratory_support=MaxRespiratorySupport, mAb=mAb_YN, plasma=Plasma_YN)
-
-factor_columns<- c("collection_month","run","ordering_clinic","pui","age18under","age18to54", "age55plus","sex","ethnicity","obesity","surveillance_sample", "chronic_lung_disease","chronic_liver_disease","chronic_heart_disease","chronic_kidney_disease","hypertension","diabetes","cancer","hiv","transplant_patient","vaccine_status","admitted_hospital","highest_level","max_respiratory_support","mAb","plasma") 
-
-patient_data[factor_columns]<-lapply(patient_data[factor_columns], factor)
+source("./scripts/startup.R")
+source("./scripts/load_data.R")
 ```
 
 ## Alternate Dataset 1: 2% MAF, 200x coverage, min. 100 reads to call minor variant
+# find highest coverage
 
 ```{r}
 #load file and tally minor variant richness
-minor_variant_sites_threshold<-read.csv('minor_variants_filtered_200x0.02_100.csv') 
+minor_variant_sites_threshold<-fread('alt_datasets/minor_variants_filtered_200x0.02_100.csv', data.table = F) 
 mcov_samples_filtered<-mcov_samples %>% filter(!run %in% runs_to_drop) %>% 
   filter(qc_status=="pass") %>% filter(!MCoVNumber %in% nextclade_bad_samples) %>% filter(scorpio_call!="Omicron (BA.1-like)") %>% 
  ##### #main coverage criterion for fair comparisons: X depth over Y percent of the genome
@@ -56,26 +43,6 @@ median_var<-for_patient_analysis %>% pull(n_var) %>% median()
 p<-left_join(for_patient_analysis, patient_data) %>% droplevels() %>% mutate(vocAlpha=if_else(startsWith(scorpio_call, "Alpha"),1,0), vocDelta=if_else(startsWith(scorpio_call, "Delta"),1,0)) %>% mutate(vocAlpha=as.factor(vocAlpha), vocDelta=as.factor(vocDelta))
 ```
 
-```{r}
-#Random Forest model of patient characteristics for classifying low-CT samples as having high or low minor variant richness
-p <- p %>% mutate(var_level=if_else(n_var<=median_var, "low","high")) %>% mutate(var_level=as.factor(var_level)) 
-
-p_select <- p  %>% select(age18under, age18to54, age55plus, sex, ethnicity, chronic_lung_disease, chronic_liver_disease, chronic_kidney_disease, chronic_heart_disease, hypertension, diabetes, cancer, obesity, transplant_patient, plasma, mAb, vaccine_status, admitted_hospital,surveillance_sample, var_level) 
-
-p.rf<-randomForest(var_level~.,
-                               data=p_select, 
-                               ntree=1000,
-                                mtry=5,
-                               importance = T) 
-
-importance.randomForest <- as.data.frame(randomForest::importance(p.rf))
-
-importance.randomForest<-importance.randomForest %>% arrange(desc(MeanDecreaseAccuracy))
-importance.randomForest
-
-rf.roc<-roc(p_select$var_level,p.rf$votes[,2], levels=c(case="high",control="low"))
-auc(rf.roc)
-```
 
 ### Association between patient hospitalization and high minor variant richness
 
@@ -195,7 +162,7 @@ alt_1<-plot_grid(title, all_plots_altdata1, nrow=2, rel_heights=c(0.1,1))
 
 ```{r}
 #load file and tally minor variant richness
-minor_variant_sites_threshold<-read.csv('minor_variants_filtered_500x0.03_20.csv') 
+minor_variant_sites_threshold<-fread('alt_datasets/minor_variants_filtered_500x0.03_20.csv', data.table = F) 
 mcov_samples_filtered<-mcov_samples %>% filter(!run %in% runs_to_drop) %>% 
   filter(qc_status=="pass") %>% filter(!MCoVNumber %in% nextclade_bad_samples) %>% filter(scorpio_call!="Omicron (BA.1-like)") %>% 
  ##### #main coverage criterion for fair comparisons: X depth over Y percent of the genome
@@ -345,28 +312,11 @@ alt_2
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ## Alternate Dataset 3: MAF 1%, minimum 1000x coverage 
 
 ```{r}
 #load file and tally minor variant richness
-minor_variant_sites_threshold<-read.csv('minor_variants_filtered_1000x0.01.csv') 
+minor_variant_sites_threshold<-fread('alt_datasets/minor_variants_filtered_1000x0.01.csv', data.table = F) 
 mcov_samples_filtered<-mcov_samples %>% filter(!run %in% runs_to_drop) %>% 
   filter(qc_status=="pass") %>% filter(!MCoVNumber %in% nextclade_bad_samples) %>% filter(scorpio_call!="Omicron (BA.1-like)") %>% 
  ##### #main coverage criterion for fair comparisons: X depth over Y percent of the genome
