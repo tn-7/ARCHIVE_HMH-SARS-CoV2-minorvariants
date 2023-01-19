@@ -23,7 +23,7 @@ mcov_samples_all <- fread("full_lineage_report_20220507.tsv", data.table=F) %>%
   filter(MCoVNumber!="MCoV30904") #remove one sample with inconsistently formatted duplicates
 
 #run and date info; keep only earliest sample from the same patient
-mcov_info <- fread("sample_date_and_run.csv", data.table=F) #%>% 
+mcov_info <- fread("sample_date_and_run.csv", data.table=F) %>% 
   mutate(COLLECTION_DT=as.Date(COLLECTION_DT, "%m/%d/%y"),
          MCoVNumber=str_remove(mcov_id, "-")) %>%
   arrange(COLLECTION_DT) %>% filter(!duplicated(PatientID))
@@ -70,7 +70,6 @@ coverage_ct_cat<-mcov_samples_with_ct %>% mutate(sample_ct=if_else(CT>=40, "CT>=
 #coverage_pre_filtering<-plot_grid(coverage_all, coverage_ct_cat)
 #coverage_pre_filtering
 ```
-
 
 
 ## Run-level QC 
@@ -120,7 +119,7 @@ f2 = mcov_samples_with_ct %>% ggplot(aes(INSTRUMENT_RESULT, log10(median_coverag
 f2 = ggMarginal(f2)
 
 runs_samples_dots = ggarrange(f1, f2, ncol = 1, nrow = 2, align = "v")
-ggsave("ggsave/runs_samples_dots.pdf", plot = runs_samples_dots, width = 3, height = 4.5)
+#ggsave("#ggsave/runs_samples_dots.pdf", plot = runs_samples_dots, width = 3, height = 4.5)
 
 
 ```
@@ -175,7 +174,7 @@ run_filter_red = ggarrange(f3, f4, ncol = 1, nrow = 2, align = "v", common.legen
                top = text_grob("red circles: samples Ct>40", color = "red", size = 10))
 ))
 
-ggsave("ggsave/run_filter_red_plot.pdf", plot = run_filter_red_plot, width = 6, height = 4)
+#ggsave("#ggsave/run_filter_red_plot.pdf", plot = run_filter_red_plot, width = 6, height = 4)
 ```
 
 ## Sample-level QC
@@ -223,7 +222,7 @@ plot1_ct_before_after = ggplot(aes(x=INSTRUMENT_RESULT), data = ct_distribution_
   xlab("Ct value") + ylab("# samples") #+ geom_vline(xintercept = 26,
                                                #     linetype = "dashed")
 
-ggsave("ggsave/plot1_ct_before_after.pdf", plot1_ct_before_after, height = 2, width = 4)
+#ggsave("#ggsave/plot1_ct_before_after.pdf", plot1_ct_before_after, height = 2, width = 4)
 ```
 
 ## Preliminary minor variant distributions
@@ -327,7 +326,7 @@ n_var_select_ct = samples_n_var %>% filter(INSTRUMENT_RESULT<50) %>%
 plot1_target = ggMarginal(n_var_select_ct, type = "violin", draw_quantiles = 
              c(.25,.5,.75))
 
-ggsave("ggsave/plot1_target.pdf", plot = plot1_target, height = 3, width = 4)
+#ggsave("#ggsave/plot1_target.pdf", plot = plot1_target, height = 3, width = 4)
 
 
 # patient_data<-fread("sample_and_patient_data.csv",data.table=F)  %>% mutate(MCoVNumber=str_remove(mcov_id, "-")) %>% select(-COLLECTION_DT) %>% inner_join(samples_n_var)
@@ -453,8 +452,7 @@ rep_nucleotides = ggarrange(a, b, common.legend = T)
 #SUPP FIG 8
 rep_nucleotides
 
-ggsave("ggsave/heatmap_spectra_replicate_variants.pdf", rep_nucleotides, 
-       height = 4, width = 7)
+#ggsave("#ggsave/heatmap_spectra_replicate_variants.pdf", rep_nucleotides, height = 4, width = 7)
 ```
 
 
@@ -476,7 +474,7 @@ replicate_mega_plot = plot_grid(
                       labels=c("b","c")), nrow=2, labels=c("a",NA)), 
   rep_indiv_samples, labels=c(NA, "d"), rel_widths=c(1.1,1))
 
-ggsave("ggsave/replicate_mega_plot.pdf", plot = replicate_mega_plot, height = 8, width = 14.5)
+#ggsave("#ggsave/replicate_mega_plot.pdf", plot = replicate_mega_plot, height = 8, width = 14.5)
 
 ```
 
@@ -506,7 +504,7 @@ lineages_figure <- mcov_samples_filtered %>%
 #SUPP FIG 2
 lineages_figure
 
-ggsave("ggsave/lineages_figure.pdf", plot = lineages_figure, height = 6, width = 6 )
+#ggsave("#ggsave/lineages_figure.pdf", plot = lineages_figure, height = 6, width = 6 )
 ```
 
 ```{r}
@@ -563,7 +561,5 @@ run_post_filter = plot_grid(n_var_by_run, plot_grid(n_var_by_coverage, n_var_dep
 
 run_post_filter
 
-ggsave("ggsave/run_post_filter.pdf", plot = run_post_filter, width = 8, height = 4)
-
-
+#ggsave("#ggsave/run_post_filter.pdf", plot = run_post_filter, width = 8, height = 4)
 ```

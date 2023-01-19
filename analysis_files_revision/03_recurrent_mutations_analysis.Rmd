@@ -91,7 +91,7 @@ gene_arrows<-ggplot(gene_limits, aes(xmin = start, xmax = end, y=molecule, label
   genome_fig<-plot_grid(gene_arrows, minor_prevalence_across_genome, nrow=2, rel_heights=c(0.25,1), axis="lr", align="hv")
 ))
 
-ggsave("ggsave/genome_fig.pdf", plot = genome_fig, height = 5, width = 8)
+#ggsave("ggsave/genome_fig.pdf", plot = genome_fig, height = 5, width = 8)
 
 ```
 
@@ -132,14 +132,15 @@ length(highly_shared_sites)
 # What's the range of minor allele frequencies the highly recurrent minor variants are found at?
 ((
   hss_maf<-patient_var_30 %>% filter(ntpos %in% highly_shared_sites) %>% 
-    ggplot(aes(x = as.factor(ntpos), y = minorfreq)) + geom_boxplot(outlier.shape = NA) + 
+    ggplot(aes(x = as.factor(ntpos), y = minorfreq)) + 
     geom_point(alpha = 0.2, position = position_jitter(width = 0.1)) + theme_bw() + 
+    geom_boxplot(outlier.shape = NA, alpha =0.5) + 
     theme(axis.text.x = element_text(angle=90)) + #geom_boxplot(outlier.alpha = 0) + 
-    xlab("Nucleotide position") + ylab("Minor allele frequency") + 
+    xlab("Nucleotide position") + ylab("Minor allele freq") + 
     scale_y_continuous(trans="log2", breaks = c(0.01*2^(0:5), 0.5))
   ))
 
-ggsave("ggsave/hss_maf.pdf", width = 4, height = 3, plot = hss_maf)
+#ggsave("ggsave/hss_maf.pdf", width = 4, height = 2, plot = hss_maf)
 
 ```
 
@@ -163,7 +164,7 @@ hss_info <- fread('hss_data2.csv', data.table = F)
     theme_pubr() + theme(axis.text.x=element_text(angle=90))
 ))
 
-ggsave('ggsave/hss_plot.pdf', plot = hss_plot, width = 8, height = 10)
+#ggsave('#ggsave/hss_plot.pdf', plot = hss_plot, width = 8, height = 10)
 ```
 
 
@@ -187,7 +188,7 @@ setdiff(mutations_of_interest$mutation_name, mutations_present$mutation_name)
 #SUPP FIG 11
 obermeyer = mutations_present %>% left_join(mutations_of_interest) %>% ggplot(aes(x=COLLECTION_DT, y=n)) + geom_bar(stat="identity", fill="black", color="black") + facet_wrap(mutation_name~ntpos) + theme_pubr() + theme(axis.text.x=element_text(angle=90), strip.background = element_rect(fill="lightblue")) + xlab("Collection Date") + ylab("No. samples") + scale_x_date(minor_breaks="1 month")
 
-ggsave("ggsave/obermeyer.pdf", plot = obermeyer, width = 6, height = 5)
+#ggsave("ggsave/obermeyer.pdf", plot = obermeyer, width = 6, height = 5)
 
 ```
 
@@ -254,7 +255,7 @@ hss_5_plots = hss_plots(hss_ordered[21:length(hss_ordered)])
 hss_plot_basepairs = plot_grid(hss_1_plots, hss_2_plots, hss_3_plots, hss_4_plots, 
                                hss_5_plots, nrow=5)
 
-ggsave("ggsave/hss_plot_basepairs.pdf", hss_plot_basepairs, height = 12, width = 10)
+#ggsave("ggsave/hss_plot_basepairs.pdf", hss_plot_basepairs, height = 12, width = 10)
 ```
 
 ```{r}
@@ -286,5 +287,5 @@ tally_in_gisaid<-fread('hss_gisaid_tallies.csv', data.table = F) %>% select(ntpo
     geom_abline(slope = 1, intercept = 0, linetype="dashed", color = "gray")
 ))
 
-ggsave("ggsave/gisaid_vs_hmh_plot.pdf", plot = gisaid_vs_hmh_plot, width = 6, height = 5)
+#ggsave("ggsave/gisaid_vs_hmh_plot.pdf", plot = gisaid_vs_hmh_plot, width = 6, height = 5)
 ```
