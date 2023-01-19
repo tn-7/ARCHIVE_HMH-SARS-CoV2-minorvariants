@@ -18,6 +18,25 @@ p = ggplot(tmp, aes(sample = n_var)) + stat_qq() + stat_qq_line() + theme_pubr()
 q = ggplot(tmp, aes(sample = log10(n_var+1))) + stat_qq() + stat_qq_line() + theme_pubr()
 plot_grid(p, q)
 ```
+
+```{r}
+patient_counts_30 = patient_counts_30 %>% mutate(admitted_hospital = as.factor(admitted_hospital))
+ 
+((plot_admitted = ggplot(patient_counts_30, aes(x = INSTRUMENT_RESULT, 
+                                              y = n_var, color = admitted_hospital)) + 
+        geom_density_2d(aes(color = admitted_hospital)) + stat_cor(method = "spearman") +
+    geom_smooth(method = "lm", se=TRUE) + theme_pubr()))
+
+
+plot_admitted = ggplot(patient_counts_30, aes(x = INSTRUMENT_RESULT, 
+                                              y = n_var, color = vaccine_status)) + 
+        geom_density_2d(aes(color = vaccine_status)) + stat_cor(method = "spearman") +
+    geom_smooth(se=TRUE) + theme_pubr() + scale_y_continuous(trans="log1p")
+plot_admitted
+```
+
+
+
 Univariate table
 ```{r}
 patient_counts_uni = patient_counts %>% 
@@ -160,33 +179,28 @@ forestplot(plotforest, rowname, estimate, se, pvalue, group)
 ```
 
 ```{r}
-#out_odds = unitable(patient_counts_uni_tmp, include, dv = "ordinal_counts")
-out_odds = fread("output/OR_ordinal.txt", data.table = F) %>% mutate(model = "lower", rank = 1:nrow(.))
-
-# out_odds_hosp = unitable(patient_counts_uni_tmp , include, dv = "ordinal_counts", other_iv = "admitted_hospital + z__CT")
-
-# out_odds_outlier = unitable(patient_counts_uni_tmp, include, dv = "high_counts") %>% mutate(model = "lower", rank = 1:nrow(.))
-out_odds_outlier = fread("output/OR_greater50counts.txt", data.table = F) %>% mutate(model = "high", rank = 1:nrow(.))
-
-uni_coef = out_odds %>% left_join(out_odds_outlier, by = "rowname") %>%
-  select(rowname, Est.x, Est.y, pval.x, pval.y, rank.x, rank.y) %>% 
-  filter(!str_detect(rowname,"___0|FALSE|Not.Surveillance"))
-
-
-x_cutoff = uni_coef %>% filter(pval.x < 0.01) %>% pull(rank.x) %>% max()
-y_cutoff = uni_coef %>% filter(pval.y < 0.01) %>% pull(rank.y) %>% max()
-
-ggplot(uni_coef, aes(rank.x, rank.y, label = rowname)) + geom_point() + geom_text_repel(size = 1) + geom_abline(intercept = 0, slope = 1, color = "grey", linetype = "dashed") +
- # scale_y_continuous(trans="log2") + scale_x_continuous(trans="log2") + 
-  theme_pubr() + 
-  geom_hline(yintercept = y_cutoff) + 
-  geom_vline(xintercept = x_cutoff)
+# #out_odds = unitable(patient_counts_uni_tmp, include, dv = "ordinal_counts")
+# out_odds = fread("output/OR_ordinal.txt", data.table = F) %>% mutate(model = "lower", rank = 1:nrow(.))
+# 
+# # out_odds_hosp = unitable(patient_counts_uni_tmp , include, dv = "ordinal_counts", other_iv = "admitted_hospital + z__CT")
+# 
+# # out_odds_outlier = unitable(patient_counts_uni_tmp, include, dv = "high_counts") %>% mutate(model = "lower", rank = 1:nrow(.))
+# out_odds_outlier = fread("output/OR_greater50counts.txt", data.table = F) %>% mutate(model = "high", rank = 1:nrow(.))
+# 
+# uni_coef = out_odds %>% left_join(out_odds_outlier, by = "rowname") %>%
+#   select(rowname, Est.x, Est.y, pval.x, pval.y, rank.x, rank.y) %>% 
+#   filter(!str_detect(rowname,"___0|FALSE|Not.Surveillance"))
+# 
+# 
+# x_cutoff = uni_coef %>% filter(pval.x < 0.01) %>% pull(rank.x) %>% max()
+# y_cutoff = uni_coef %>% filter(pval.y < 0.01) %>% pull(rank.y) %>% max()
+# 
+# ggplot(uni_coef, aes(rank.x, rank.y, label = rowname)) + geom_point() + geom_text_repel(size = 1) + geom_abline(intercept = 0, slope = 1, color = "grey", linetype = "dashed") +
+#  # scale_y_continuous(trans="log2") + scale_x_continuous(trans="log2") + 
+#   theme_pubr() + 
+#   geom_hline(yintercept = y_cutoff) + 
+#   geom_vline(xintercept = x_cutoff)
 ```
-```{r}
-```
-
-
-
 
 
 
@@ -241,17 +255,6 @@ patient_counts_uni_tmp
 # glm(log10(n_var + 1) ~ age18under, data = patient_counts_uni_tmp %>% filter(n_var < 30)) %>%
 #   summary()
 ```
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -398,7 +401,7 @@ save_odds = save_odds %>% arrange(pval)
 # 
 # print(fp)
 
-fwrite(save_odds, file = "odds_test.txt", sep = "\t")
+#fwrite(save_odds, file = "odds_test.txt", sep = "\t")
 ```
 
 

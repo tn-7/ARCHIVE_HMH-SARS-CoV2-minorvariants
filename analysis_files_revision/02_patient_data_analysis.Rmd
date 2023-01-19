@@ -114,7 +114,7 @@ for (threshold in seq(0, 50, 5)) {
 ```
 
 
-```{r, fig.width = 2, fig.height = 2}
+```{r}
 ggplot(threshold_out, aes(x = threshold, y = fraction_greater_than_threshold, 
                           shape = admitted_hospital, color = admitted_hospital)) + 
   theme_pubr() + geom_line() + 

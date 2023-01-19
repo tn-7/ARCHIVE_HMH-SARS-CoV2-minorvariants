@@ -209,11 +209,13 @@ ct_distribution_after_qc<-mcov_samples_filtered %>% filter(INSTRUMENT_RESULT<50)
 
 ct_distribution_before_qc<-mcov_samples %>% filter(INSTRUMENT_RESULT<50)
 
-ggplot(aes(x=INSTRUMENT_RESULT), data = ct_distribution_before_qc) + 
+plot1_ct_before_after = ggplot(aes(x=INSTRUMENT_RESULT), data = ct_distribution_before_qc) + 
   geom_histogram(binwidth = 1, fill = "grey") +
   geom_histogram(data = ct_distribution_after_qc, binwidth=1) + theme_pubr() + 
-  xlab("Ct value") + ylab("# samples") + geom_vline(xintercept = 26,
-                                                    linetype = "dashed")
+  xlab("Ct value") + ylab("# samples") #+ geom_vline(xintercept = 26,
+                                               #     linetype = "dashed")
+
+ggsave("ggsave/plot1_ct_before_after.pdf", plot1_ct_before_after, height = 2, width = 4)
 ```
 
 ## Preliminary minor variant distributions
@@ -314,8 +316,10 @@ n_var_select_ct = samples_n_var %>% filter(INSTRUMENT_RESULT<50) %>%
   geom_hline(yintercept = 30, linetype = "dashed") + 
   geom_vline(xintercept = 26, linetype = "dashed")
 
-ggMarginal(n_var_select_ct, type = "violin", draw_quantiles = 
+plot1_target = ggMarginal(n_var_select_ct, type = "violin", draw_quantiles = 
              c(.25,.5,.75))
+
+ggsave("ggsave/plot1_target.pdf", plot = plot1_target, height = 3, width = 4)
 
 
 # patient_data<-fread("sample_and_patient_data.csv",data.table=F)  %>% mutate(MCoVNumber=str_remove(mcov_id, "-")) %>% select(-COLLECTION_DT) %>% inner_join(samples_n_var)

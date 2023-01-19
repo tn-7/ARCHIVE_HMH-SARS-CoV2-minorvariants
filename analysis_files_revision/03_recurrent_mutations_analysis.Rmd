@@ -58,7 +58,8 @@ minor_consensus_plotdata = patient_var_30 %>% left_join(consensus) %>%
     geom_label_repel(data = minor_consensus_plotdata %>% 
                group_by(ntpos) %>% tally() %>% filter(n > nrow(patient_counts_30)*0.02) %>% 
                  left_join(minor_consensus_plotdata %>% select(ntpos, consensus)) %>% unique,
-               aes(x = ntpos, y = n, label = ntpos, color = consensus)) +
+               aes(x = ntpos, y = n, label = ntpos, color = consensus)) + 
+    scale_color_manual(values = c("salmon","grey")) + 
     
   theme_bw() + 
   geom_hline(yintercept = nrow(patient_counts_30)*0.02, linetype="dotted") + 
@@ -67,6 +68,7 @@ minor_consensus_plotdata = patient_var_30 %>% left_join(consensus) %>%
   annotate("rect", xmin=28274, xmax=29533, ymin=0, ymax=Inf, alpha=0.2, fill="#F4B5BD") + 
   annotate("rect", xmin=21563, xmax=25384, ymin=0, ymax=Inf, alpha=0.2, fill="#FAD77B") + 
   xlim(0,29903)))
+
 
 # consensus_prevalence_across_genome<-consensus_sites_lowct %>% ggplot(aes(x=ntpos)) + 
 #   geom_bar(fill="black", color="black") + theme_bw() + 
@@ -79,62 +81,40 @@ minor_consensus_plotdata = patient_var_30 %>% left_join(consensus) %>%
 
 # prevalence_across_genome<-plot_grid(minor_prevalence_across_genome, consensus_prevalence_across_genome, nrow=2, axis="bltr")
 # prevalence_across_genome
-```
 
-```{r}
 gene_limits<-genes %>% group_by(gene_id) %>% summarise(start=min(ntpos), end=max(ntpos)) %>% filter(gene_id!="") %>% mutate(molecule="")
 gene_arrows<-ggplot(gene_limits, aes(xmin = start, xmax = end, y=molecule, label = gene_id)) +
   geom_gene_arrow(arrowhead_height = unit(3, "mm"), arrowhead_width = unit(1, "mm")) + geom_gene_label() + geom_segment(aes(x=266,y=1.5,xend=13468,yend=1.5), size=0.2) + xlim(0,29903) +
   annotate("text", label="ORF1a", x=5000, y=1.41, size=3) + geom_segment(aes(x=13468,y=1.4,xend=21555,yend=1.4), size=0.2) + annotate("text", label="ORF1b", x=18000, y=1.31, size=3) +
   theme_genes() + ylab(NULL) + xlab(NULL) 
-# ((
-#   genome_fig<-plot_grid(gene_arrows, minor_prevalence_across_genome, consensus_prevalence_across_genome, nrow=3, rel_heights=c(0.5,1,1), axis="lr", align="hv")
-# ))
-```
-
-
-```{r}
-#Frequency of mutations by gene
-gene_lengths <- genes %>% group_by(gene_id) %>% summarise(gene_length=n())
-variant_density <- patient_var_30 %>% left_join(genes) %>% group_by(gene_id) %>% 
-  filter(gene_id!="") %>% summarise(n_variants=n()) %>% left_join(gene_lengths) %>% 
-  mutate(variant_density=n_variants/gene_length) 
-variant_density$gene_id <- factor(variant_density$gene_id, 
-                                  levels=c("5'UTR","nsp1","nsp2","PL-PRO","nsp4",
-                                           "3CL-PRO","nsp6","nsp7","nsp8","nsp9",
-                                           "nsp10","RdRp","Hel","ExoN","NendoU",
-                                           "2'-O-MT","S","ORF3a","E","M","ORF6",
-                                           "ORF7ab","ORF8","N","ORF10","3'UTR"))
 ((
-  var_by_gene_fig<-variant_density %>% ggplot(aes(x=gene_id, y=variant_density)) + geom_bar(stat="identity", fill="white", color="black") + theme_bw() + theme(axis.text.x = element_text(angle=90)) + xlab("Gene") + ylab("Minor variant density")
+  genome_fig<-plot_grid(gene_arrows, minor_prevalence_across_genome, nrow=2, rel_heights=c(0.25,1), axis="lr", align="hv")
 ))
+
+ggsave("ggsave/genome_fig.pdf", plot = genome_fig, height = 5, width = 8)
+
 ```
 
 ```{r}
 #Frequency of mutations by gene in hospitalized vs. non-hospitalized patients
-gene_lengths <- genes %>% group_by(gene_id) %>% summarise(gene_length=n())
-
-variant_density <- patient_var_30 %>% left_join(genes) %>% 
-  group_by(admitted_hospital, gene_id) %>% filter(gene_id!="") %>% 
-  summarise(n_variants=n()) %>% left_join(gene_lengths) %>% 
-  mutate(variant_density=n_variants/gene_length) 
-
-
-variant_density$gene_id<-factor(variant_density$gene_id, levels=c("5'UTR","nsp1","nsp2","PL-PRO","nsp4","3CL-PRO","nsp6","nsp7","nsp8","nsp9", "nsp10","RdRp","Hel","ExoN","NendoU","2'-O-MT","S","ORF3a","E","M","ORF6","ORF7ab","ORF8","N","ORF10","3'UTR"))
-#SUPP FIG 7
-((
-  var_by_gene_fig_hosp<-variant_density %>% ggplot(aes(x=gene_id, y=variant_density)) + 
-    geom_bar(stat="identity", fill="white", color="black") + theme_bw() + 
-    theme(axis.text.x = element_text(angle=90)) + xlab("Gene") + ylab("Minor variant density") + 
-    facet_grid(admitted_hospital~.)
-))
+# gene_lengths <- genes %>% group_by(gene_id) %>% summarise(gene_length=n())
+# 
+# variant_density <- patient_var_30 %>% left_join(genes) %>% 
+#   group_by(admitted_hospital, gene_id) %>% filter(gene_id!="") %>% 
+#   summarise(n_variants=n()) %>% left_join(gene_lengths) %>% 
+#   mutate(variant_density=n_variants/gene_length) 
+# 
+# 
+# variant_density$gene_id<-factor(variant_density$gene_id, levels=c("5'UTR","nsp1","nsp2","PL-PRO","nsp4","3CL-PRO","nsp6","nsp7","nsp8","nsp9", "nsp10","RdRp","Hel","ExoN","NendoU","2'-O-MT","S","ORF3a","E","M","ORF6","ORF7ab","ORF8","N","ORF10","3'UTR"))
+# #SUPP FIG 7
+# ((
+#   var_by_gene_fig_hosp<-variant_density %>% ggplot(aes(x=gene_id, y=variant_density)) + 
+#     geom_bar(stat="identity", fill="white", color="black") + theme_bw() + 
+#     theme(axis.text.x = element_text(angle=90)) + xlab("Gene") + ylab("Minor variant density") + 
+#     facet_grid(admitted_hospital~.)
+# ))
 ```
 
-
-```{r fig.height=10}
-#FIG 3
-# plot_grid(genome_fig, plot_grid(var_by_gene_fig, hmap, nrow=2,labels=c("b","c")), ncol=2, rel_widths=c(2.5,1), labels=c("a",NULL))
-```
 
 ## Characteristics of highly recurrent minor variants
 
@@ -143,6 +123,8 @@ variant_density$gene_id<-factor(variant_density$gene_id, levels=c("5'UTR","nsp1"
   highly_shared_sites<- patient_var_30 %>% group_by(ntpos) %>% tally() %>% arrange(desc(n)) %>% 
     filter(n >= length(patient_var_30$name %>% unique)*0.02) %>% pull(ntpos) %>% na.omit() %>% as.numeric()
 ))
+
+
 length(highly_shared_sites)
 ```
 
@@ -157,16 +139,31 @@ length(highly_shared_sites)
     scale_y_continuous(trans="log2", breaks = c(0.01*2^(0:5), 0.5))
   ))
 
+ggsave("ggsave/hss_maf.pdf", width = 4, height = 3, plot = hss_maf)
+
 ```
 
 
 ```{r, fig.height = 10}
 #How many different changes do you find at each recurrently-mutated position? How many such mutations are a reversion to the reference?
-((hss_info <- fread('hss_data2.csv', data.table = F)))
+hss_info <- fread('hss_data2.csv', data.table = F)
 
 ((
-hss_by_site<-patient_var_30 %>% filter(ntpos %in% highly_shared_sites) %>% group_by(ntpos, major, minor) %>% summarise(n=n(), median_frequency=median(minorfreq)) %>% left_join(hss_info) %>% mutate(change=paste0(major,">",minor)) %>% mutate(ref_reversion=if_else(minor==refnt,"yes","no")) %>% mutate(median_MAF=if_else(median_frequency<0.02,"low (median <2% MAF)","high (median >=2% MAF)")) %>% ggplot(aes(x=change, y=n, color=ref_reversion)) + geom_bar(stat="identity", aes(fill=median_MAF)) + scale_color_manual(values=c("gray","red")) + scale_fill_manual(values=c("darkmagenta","steelblue")) + facet_wrap(ntpos~`aa position`, scales="free") + theme_pubr() + theme(axis.text.x=element_text(angle=90))
+  hss_plot = patient_var_30 %>% filter(ntpos %in% highly_shared_sites) %>% 
+    group_by(ntpos, major, minor) %>% summarise(n=n(), median_frequency = median(minorfreq)) %>% 
+    left_join(hss_info) %>% mutate(change=paste0(major,">",minor)) %>% 
+    mutate(ref_reversion=if_else(minor==refnt,"yes","no")) %>% 
+    mutate(median_MAF=if_else(median_frequency<0.02, 
+                              "low (median <2% MAF)","high (median >=2% MAF)")) %>%
+    ggplot(aes(x=change, y=n, color=ref_reversion)) + 
+    geom_bar(stat="identity", aes(fill=median_MAF)) + 
+    scale_color_manual(values=c("gray","red")) + 
+    scale_fill_manual(values=c("darkmagenta","steelblue")) + 
+    facet_wrap(ntpos~`aa position`, scales="free") + 
+    theme_pubr() + theme(axis.text.x=element_text(angle=90))
 ))
+
+ggsave('ggsave/hss_plot.pdf', plot = hss_plot, width = 8, height = 10)
 ```
 
 
@@ -188,7 +185,10 @@ setdiff(mutations_of_interest$mutation_name, mutations_present$mutation_name)
 
 ```{r}
 #SUPP FIG 11
-mutations_present %>% left_join(mutations_of_interest) %>% ggplot(aes(x=COLLECTION_DT, y=n)) + geom_bar(stat="identity", fill="black", color="black") + facet_wrap(mutation_name~ntpos) + theme_pubr() + theme(axis.text.x=element_text(angle=90), strip.background =element_rect(fill="lightblue")) + xlab("Collection Date") + ylab("No. samples") + scale_x_date(minor_breaks="1 month")
+obermeyer = mutations_present %>% left_join(mutations_of_interest) %>% ggplot(aes(x=COLLECTION_DT, y=n)) + geom_bar(stat="identity", fill="black", color="black") + facet_wrap(mutation_name~ntpos) + theme_pubr() + theme(axis.text.x=element_text(angle=90), strip.background = element_rect(fill="lightblue")) + xlab("Collection Date") + ylab("No. samples") + scale_x_date(minor_breaks="1 month")
+
+ggsave("ggsave/obermeyer.pdf", plot = )
+
 ```
 
 
@@ -251,7 +251,10 @@ hss_3_plots<-hss_plots(hss_ordered[11:15])
 hss_4_plots = hss_plots(hss_ordered[16:20])
 hss_5_plots = hss_plots(hss_ordered[21:length(hss_ordered)])
 
-plot_grid(hss_1_plots, hss_2_plots, hss_3_plots, hss_4_plots, hss_5_plots, nrow=5)
+hss_plot_basepairs = plot_grid(hss_1_plots, hss_2_plots, hss_3_plots, hss_4_plots, 
+                               hss_5_plots, nrow=5)
+
+ggsave("ggsave/hss_plot_basepairs.pdf", hss_plot_basepairs, height = 12, width = 10)
 ```
 
 ```{r}
@@ -273,6 +276,15 @@ tally_in_minors<-patient_var_30 %>% filter(ntpos %in% highly_shared_sites) %>% g
 
 tally_in_gisaid<-fread('hss_gisaid_tallies.csv', data.table = F) %>% select(ntpos, n_consensus_variants_gisaid=n) %>% mutate(freq_consensus_variants_gisaid=n_consensus_variants_gisaid/3109421) #USA gisaid sequences as of 6/13/2022
 #SUPP FIG 10
-tally_in_minors %>% left_join( tally_in_gisaid) %>% ggplot(aes(x=freq_minor_variants_houston, y=freq_consensus_variants_gisaid, color = as.factor(ntpos))) + geom_point(alpha=0.5) + theme_pubr(legend= "right") + 
-  xlab("Fraction of samples with minor variant in Houston data") + ylab("Fraction of samples with consensus variant in GISAID USA") + geom_text_repel(aes(label=ntpos), max.overlaps = 10, label.size=0.1) + geom_abline(slope = 1, intercept = 0, linetype="dashed", color = "gray")
+((
+  gisaid_vs_hmh_plot = tally_in_minors %>% left_join( tally_in_gisaid) %>% 
+    ggplot(aes(x=freq_minor_variants_houston, y=freq_consensus_variants_gisaid, 
+               color = as.factor(ntpos))) + geom_point(alpha=0.5) + theme_pubr(legend= "right") + 
+  xlab("Fraction of samples with minor variant in Houston data") + 
+    ylab("Fraction of samples with consensus variant in GISAID USA") + 
+    geom_text_repel(aes(label=ntpos), max.overlaps = 10, label.size=0.1) + 
+    geom_abline(slope = 1, intercept = 0, linetype="dashed", color = "gray")
+))
+
+ggsave("ggsave/gisaid_vs_hmh_plot.pdf", plot = gisaid_vs_hmh_plot, width = 6, height = 5)
 ```

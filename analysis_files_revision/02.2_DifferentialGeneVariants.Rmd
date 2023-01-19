@@ -1,0 +1,120 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r, fig.width = 2, fig.height = 2.5}
+source("./scripts/startup.R")
+source("./scripts/load_data.R")
+  
+gene_counts = patient_var_30 %>% #left_join(immunocompromised) %>%
+  #filter(admitted_hospital == 1) %>%
+  group_by(MCoVNumber, gene) %>% 
+  summarize(g_var = n()) %>% group_by(MCoVNumber) %>% 
+  mutate(n_var = sum(g_var)) %>% 
+  select(!n_var) %>% filter(gene!="") %>%
+  pivot_wider(names_from = "gene", values_from = g_var, values_fill = 0)
+
+genes = patient_var %>% pull(gene) %>% unique
+
+include = colnames(patient_counts_uni_tmp) %>% as.data.frame %>% 
+  filter(!. %in% exclude) %>% filter(str_detect(.,'__')) %>% pull(.)
+meta = patient_counts_uni_tmp %>% select(c("MCoVNumber", include,"n_var")) %>%
+  select(!contains("0")) %>%
+  select(!contains("FALSE")) %>%
+  select(!contains("high_counts")) %>% #filter(n_var <= 30) %>%
+  select(!contains("disease"))
+
+gene_counts_meta = gene_counts %>% left_join(meta)
+gene_counts_meta_tmp = gene_counts_meta
+y = gene_counts_meta_tmp %>% ungroup %>% select(one_of(genes)) #%>% as.matrix
+
+
+enrichment = function(y, genes) {
+  genes = genes[genes != ""]
+  gene_lengths = fread("ntpos_gene_update.csv") %>% 
+    mutate(total = max(ntpos)-min(ntpos)+1) %>% 
+    group_by(gene_id) %>%
+    summarize(start = min(ntpos), end = max(ntpos)) %>% 
+    mutate(length = end-start+1, total = max(end), prop = length/total) %>%
+    filter(gene_id != "")
+  probs = gene_lengths %>% arrange(start) %>% select(gene_id, prop)
+  
+  index = 0; out = 0; for (gene in genes) {
+    index = index + 1
+    test_tmp = tryCatch(binom.test(sum(y[gene]), 
+                          sum(colSums(y[genes])), probs %>% 
+                 filter(gene_id == gene) %>% pull(prop)),
+        error=function(e) index<<-0)
+      if (index == 0) next
+    test = tidy(test_tmp) %>% mutate(gene = gene)
+    if (index == 1) {
+      out = test
+    } else {
+      out = rbind(out, test)
+    }
+  }
+  out = out %>% left_join(probs %>% mutate(gene = gene_id))
+  
+  library(magrittr)
+  
+  # plot the bars total, admitted, not admitted; vaccine, no vaccine; mab vs no mab.
+  out = out %>% mutate(fc = out$estimate / out$prop) %>% arrange(fc)
+  out$gene = factor(out$gene, out$gene)
+  out$enriched = (out$estimate > out$prop)
+  out[out$p.value > 0.001,] %<>% mutate(enriched = NA)
+  return(out)
+}
+out = enrichment(y, genes)
+
+out %>% ggplot(aes(y = prop, x = gene, fill = enriched)) + 
+  #geom_bar(stat = "identity") + 
+  geom_errorbar(aes(x = gene, ymin = log2(conf.low/prop), ymax = log2(conf.high/prop))) +
+  theme_pubr() + coord_flip() + geom_hline(yintercept = 0, linetype = "dashed") +
+  ylab("log2FC (observed / expected_counts)")
+# color based on enriched or negative
+```
+
+```{r}
+y_with_patient = gene_counts_meta_tmp %>% select(one_of(genes), vaccine_status___1, admitted_hospital___1, mAb___1)
+enrichment(y_with_patient %>% 
+      filter(admitted_hospital___1 == "YES"), genes)
+
+out_admitted_hospital = (enrichment(y_with_patient %>% 
+      filter(admitted_hospital___1 == "YES"), genes) %>%
+  mutate(condition = "Inpatient")) %>% rbind(
+  (enrichment(y_with_patient %>% 
+      filter(admitted_hospital___1 == "NO"), genes) %>%
+  mutate(condition = "Outpatient"))) %>%
+  ggplot(aes(y = prop, x = gene, color = factor(condition))) + 
+  geom_errorbar(aes(x = gene, ymin = log2(conf.low/prop), ymax = log2(conf.high/prop)), position=position_dodge(width=0.3)) +
+  theme_pubr() + coord_flip() + geom_hline(yintercept = 0, linetype = "dashed") +
+  ylab("log2FC (observed / expected_counts)")
+
+out_vaccine = (enrichment(y_with_patient %>% 
+      filter(vaccine_status___1 == "YES"), genes) %>%
+  mutate(condition = "Vaccinated")) %>% rbind(
+  (enrichment(y_with_patient %>% 
+      filter(vaccine_status___1 == "NO"), genes) %>%
+  mutate(condition = "Unvaccinated"))) %>%
+  ggplot(aes(y = prop, x = gene, color = factor(condition))) + 
+  geom_errorbar(aes(x = gene, ymin = log2(conf.low/prop), ymax = log2(conf.high/prop)), position=position_dodge(width=0.3)) +
+  theme_pubr() + coord_flip() + geom_hline(yintercept = 0, linetype = "dashed") +
+  ylab("log2FC (observed / expected_counts)")
+
+out_mAb = (enrichment(y_with_patient %>% 
+      filter(mAb___1 == "YES"), genes) %>%
+  mutate(condition = "Inpatient")) %>% rbind(
+  (enrichment(y_with_patient %>% 
+      filter(mAb___1 == "NO"), genes) %>%
+  mutate(condition = "Outpatient"))) %>%
+  ggplot(aes(y = prop, x = gene, color = factor(condition))) + 
+  geom_errorbar(aes(x = gene, ymin = log2(conf.low/prop), ymax = log2(conf.high/prop)), position=position_dodge(width=0.3)) +
+  theme_pubr() + coord_flip() + geom_hline(yintercept = 0, linetype = "dashed") +
+  ylab("log2FC (observed / expected_counts)")
+
+out_admitted_hospital_no = enrichment(y_with_patient %>% filter(admitted_hospital___1 == "NO"), genes)
+out_admitted_hospital_no = enrichment(y_with_patient %>% filter(admitted_hospital___1 == "NO"), genes)
+
+```
+
