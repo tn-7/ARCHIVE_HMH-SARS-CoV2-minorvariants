@@ -38,9 +38,9 @@ consensus = consensus_sites_lowct %>% select(MCoVNumber, ntpos) %>%
 minor_consensus_plotdata = patient_var_30 %>% left_join(consensus) %>%
     mutate(consensus = replace_na(consensus, FALSE))
 
-((minor_prevalence_across_genome <- minor_consensus_plotdata %>% 
+minor_prevalence_across_genome_unlog <- minor_consensus_plotdata %>% 
     filter(consensus==TRUE) %>% ggplot(aes(x=ntpos)) + 
-  scale_y_continuous(trans = "log2") +
+#  scale_y_continuous(trans = "log2") +
   geom_bar(color = "grey") +
 
     # label your data too for the SALMON
@@ -55,19 +55,40 @@ minor_consensus_plotdata = patient_var_30 %>% left_join(consensus) %>%
       geom_point(data = minor_consensus_plotdata %>%
                group_by(ntpos) %>% tally(), 
            aes(x = ntpos, y= n), shape = "") + 
-    geom_label_repel(data = minor_consensus_plotdata %>% 
-               group_by(ntpos) %>% tally() %>% filter(n > nrow(patient_counts_30)*0.02) %>% 
-                 left_join(minor_consensus_plotdata %>% select(ntpos, consensus)) %>% unique,
-               aes(x = ntpos, y = n, label = ntpos, color = consensus)) + 
     scale_color_manual(values = c("salmon","grey")) + 
-    
   theme_bw() + 
   geom_hline(yintercept = nrow(patient_counts_30)*0.02, linetype="dotted") + 
   xlab("Nucleotide position") + ylab("No. samples w/minor variant at site") + 
   annotate("rect", xmin=27894, xmax=28295, ymin=0, ymax=Inf, alpha=0.2, fill="#85D4E3") + 
   annotate("rect", xmin=28274, xmax=29533, ymin=0, ymax=Inf, alpha=0.2, fill="#F4B5BD") + 
   annotate("rect", xmin=21563, xmax=25384, ymin=0, ymax=Inf, alpha=0.2, fill="#FAD77B") + 
-  xlim(0,29903)))
+  xlim(0,29903)
+
+minor_prevalence_across_genome_unlog_labeled = 
+  minor_prevalence_across_genome_unlog + 
+  geom_text_repel(ylim  = c(500,NA), size = 3, angle = 90, segment.linetype = 3,
+                    segment.size = 0.4, segment.curvature = -1e-20, 
+                    arrow = arrow(length = unit(0.015, "npc"), type = "closed"),
+                    data = minor_consensus_plotdata %>% group_by(ntpos) %>% 
+                      tally() %>% filter(n > nrow(patient_counts_30)*0.02) %>% 
+                      left_join(minor_consensus_plotdata %>% select(ntpos, consensus)) %>% unique,
+                    aes(x = ntpos, y = n, label = ntpos, color = consensus))
+
+((
+  genome_fig_unlog<-plot_grid(gene_arrows, minor_prevalence_across_genome_unlog_labeled, nrow=2, rel_heights=c(0.25,1), axis="lr", align="hv")
+))
+#ggsave("ggsave/genome_fig_unlog.pdf", plot = genome_fig_unlog, height = 5, width = 8)
+
+
+
+# LOG TRANSFORM
+
+((
+  minor_prevalence_across_genome = minor_prevalence_across_genome_unlog + scale_y_continuous(trans = "log2") + geom_label_repel(size = 2, alpha = 0.65, data = minor_consensus_plotdata %>% 
+               group_by(ntpos) %>% tally() %>% filter(n > nrow(patient_counts_30)*0.02) %>% 
+                 left_join(minor_consensus_plotdata %>% select(ntpos, consensus)) %>% unique,
+               aes(x = ntpos, y = n, label = ntpos, color = consensus))
+))
 
 
 # consensus_prevalence_across_genome<-consensus_sites_lowct %>% ggplot(aes(x=ntpos)) + 
@@ -87,11 +108,14 @@ gene_arrows<-ggplot(gene_limits, aes(xmin = start, xmax = end, y=molecule, label
   geom_gene_arrow(arrowhead_height = unit(3, "mm"), arrowhead_width = unit(1, "mm")) + geom_gene_label() + geom_segment(aes(x=266,y=1.5,xend=13468,yend=1.5), size=0.2) + xlim(0,29903) +
   annotate("text", label="ORF1a", x=5000, y=1.41, size=3) + geom_segment(aes(x=13468,y=1.4,xend=21555,yend=1.4), size=0.2) + annotate("text", label="ORF1b", x=18000, y=1.31, size=3) +
   theme_genes() + ylab(NULL) + xlab(NULL) 
+
 ((
   genome_fig<-plot_grid(gene_arrows, minor_prevalence_across_genome, nrow=2, rel_heights=c(0.25,1), axis="lr", align="hv")
 ))
-
 #ggsave("ggsave/genome_fig.pdf", plot = genome_fig, height = 5, width = 8)
+
+
+
 
 ```
 
@@ -141,6 +165,17 @@ length(highly_shared_sites)
   ))
 
 #ggsave("ggsave/hss_maf.pdf", width = 4, height = 2, plot = hss_maf)
+
+((
+  hss_maf_unlog<-patient_var_30 %>% filter(ntpos %in% highly_shared_sites) %>% 
+    ggplot(aes(x = as.factor(ntpos), y = minorfreq)) + 
+    geom_point(alpha = 0.2, position = position_jitter(width = 0.1)) + theme_bw() + 
+    geom_boxplot(outlier.shape = NA, alpha =0.5) + 
+    theme(axis.text.x = element_text(angle=90)) + #geom_boxplot(outlier.alpha = 0) + 
+    xlab("Nucleotide position") + ylab("Minor allele freq") #+ 
+    #scale_y_continuous(trans="log2", breaks = c(0.01*2^(0:5), 0.5))
+  ))
+#ggsave("ggsave/hss_maf_unlog.pdf", width = 4, height = 2, plot = hss_maf_unlog)
 
 ```
 
