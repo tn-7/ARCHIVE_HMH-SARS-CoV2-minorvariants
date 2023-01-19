@@ -331,9 +331,9 @@ plot1_target = ggMarginal(n_var_select_ct, type = "violin", draw_quantiles =
 n_var_select_ct_filtered = samples_n_var %>% 
   filter(INSTRUMENT_RESULT<26 & n_var < 30) %>% 
   ggplot(aes(x=INSTRUMENT_RESULT, y=n_var)) + 
-  geom_point(shape = 1, alpha = 1/8) + 
-  geom_density_2d(color = "salmon") + 
-#  scale_y_continuous(trans = "log1p", breaks = c(0,1,5,10,30,50,100,300,500)) +
+  geom_point(shape = 1, alpha = 1/16) + 
+  geom_density_2d(color = "darkblue") + 
+  scale_y_continuous(breaks = seq(0,30,5)) +
   scale_x_continuous(breaks = seq(0,40,by = 5)) +
   theme_pubr() + xlab("Ct value") + ylab("n_var") +
   geom_smooth(color = "red") + stat_cor(method = "spearman", cor.coef.name = "rho")
@@ -342,7 +342,9 @@ n_var_select_ct_filtered = samples_n_var %>%
 ct_n_var_postfilter_plot = ggMarginal(n_var_select_ct_filtered, 
                                       type = "violin", 
                                       draw_quantiles = c(0.25,0.5,0.75))
+ct_n_var_postfilter_plot
 
+#ggsave("ggsave/ct_n_var_postfilter_plot.pdf", ct_n_var_postfilter_plot, height = 5, width = 5)
 
 
 # patient_data<-fread("sample_and_patient_data.csv",data.table=F)  %>% mutate(MCoVNumber=str_remove(mcov_id, "-")) %>% select(-COLLECTION_DT) %>% inner_join(samples_n_var)
@@ -448,28 +450,28 @@ a <- table(rep_mutations$major.original, rep_mutations$minor.original) %>%
   data.frame() %>% ggplot(aes(x=Var1, y=Var2, fill=Freq/sum(Freq))) + 
   geom_tile(colour = "black") + # grid colour
   scale_fill_gradient(low = "white",
-                      high = "salmon") +
+                      high = "darkblue") +
   theme_minimal() + labs(fill = "Fraction",
        x = "Consensus allele",
-       y = "Minor allele", title="Reproducible minor variants")
+       y = "Minor allele", title="Reproducible")
 
 b <- table(nonrep_mutations$major.original, nonrep_mutations$minor.original) %>% 
   data.frame() %>% ggplot(aes(x=Var1, y=Var2, fill=Freq/sum(Freq))) + 
   geom_tile(colour = "black") + 
   scale_fill_gradient(low = "white",
-                      high = "salmon") +
+                      high = "darkblue") +
   theme_minimal() + labs(fill = "Fraction",
        x = "Consensus allele",
-       y = "Minor allele", title="Non-reproducible minor variants")
+       y = "Minor allele", title="Non-reproducible")
 
 #rep_nucleotides <- cowplot::plot_grid(a, b, ncol=2)
 
-rep_nucleotides = ggarrange(a, b, common.legend = T)
+rep_nucleotides = ggarrange(a, b, hmap, ncol=3, common.legend = T)
 
 #SUPP FIG 8
 rep_nucleotides
 
-#ggsave("ggsave/heatmap_spectra_replicate_variants.pdf", rep_nucleotides, height = 4, width = 7)
+ggsave("ggsave/heatmap_spectra_replicate_variants.pdf", rep_nucleotides, height = 3, width = 8)
 ```
 
 
@@ -515,13 +517,13 @@ lineages_figure <- mcov_samples_filtered %>%
   ggplot(aes(x=COLLECTION_DT)) + geom_bar(aes(fill=variant)) + theme_bw() + 
 #  scale_fill_manual(values=c("#00A08A", "#F2AD00", "#F98400", "#5BBCD6")) + 
   xlab("Collection date") + ylab("No. samples") + 
-  ggtitle(paste0('Final sample set, Ct<26 & n_var<30, n = ',length(samples_to_analyze))) + 
+  ggtitle(paste0('Final sample set, \n Ct<26 & n_var<30, n = ',length(samples_to_analyze))) + 
   scale_x_date(minor_breaks="1 month") + theme_pubr()
 
 #SUPP FIG 2
 lineages_figure
 
-#ggsave("ggsave/lineages_figure.pdf", plot = lineages_figure, height = 6, width = 6 )
+#ggsave("ggsave/lineages_figure.pdf", plot = lineages_figure, height = 5, width = 5 )
 ```
 
 ```{r}

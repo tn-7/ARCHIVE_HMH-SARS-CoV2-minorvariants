@@ -18,12 +18,14 @@ consensus_sites_lowct
 
 ```{r}
 #mutation type
-hmap<-table(patient_var_30$major, patient_var_30$minor) %>% data.frame() %>% ggplot(aes(x=Var1, y=Var2, fill=Freq)) + geom_tile(colour = "black") + # grid color
+hmap<-table(patient_var_30$major[patient_var_30$major!=""], patient_var_30$minor[patient_var_30$minor!=""]) %>% data.frame() %>%
+  ggplot(aes(x=Var1, y=Var2, fill=Freq/sum(Freq))) + geom_tile(colour = "black") + # grid color
   scale_fill_gradient(low = "white",
-                      high = "steelblue") +
+                      high = "darkblue") +
   theme_minimal() +   labs(fill = "Number",
        x = "Consensus allele",
        y = "Minor allele")#Most frequently C>T mutations
+hmap
 ```
 
 ```{r}
