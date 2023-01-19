@@ -471,7 +471,7 @@ rep_nucleotides = ggarrange(a, b, hmap, ncol=3, common.legend = T)
 #SUPP FIG 8
 rep_nucleotides
 
-ggsave("ggsave/heatmap_spectra_replicate_variants.pdf", rep_nucleotides, height = 3, width = 8)
+#ggsave("ggsave/heatmap_spectra_replicate_variants.pdf", rep_nucleotides, height = 3, width = 8)
 ```
 
 
