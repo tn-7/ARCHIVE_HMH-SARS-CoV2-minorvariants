@@ -10,6 +10,16 @@ libraries = c("tidyverse", "cowplot", "pROC", "epitools", "glmnet", "nlme",
              "ggpubr", "data.table", "ggrepel", "Biostrings", "ggpubr", 
              "pheatmap", "vegan", "sjPlot", "sjlabelled", "sjmisc",
              "broom", "ggsci", "ggExtra");
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(char=libraries)
+
+# if (!require("BiocManager", quietly = TRUE))
+#   install.packages("BiocManager")
+# 
+# BiocManager::install("Biostrings")
+
+
 invisible(suppressPackageStartupMessages(lapply(libraries, require, character.only = TRUE)));
 options(dplyr.summarise.inform = FALSE)
 

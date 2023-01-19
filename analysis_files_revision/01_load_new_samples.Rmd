@@ -23,9 +23,9 @@ mcov_samples_all <- fread("full_lineage_report_20220507.tsv", data.table=F) %>%
   filter(MCoVNumber!="MCoV30904") #remove one sample with inconsistently formatted duplicates
 
 #run and date info; keep only earliest sample from the same patient
-mcov_info <- fread("sample_date_and_run.csv", data.table=F) %>% 
-  mutate(COLLECTION_DT=as.Date(COLLECTION_DT, "%m/%d/%y"), 
-         MCoVNumber=str_remove(mcov_id, "-")) %>% 
+mcov_info <- fread("sample_date_and_run.csv", data.table=F) #%>% 
+  mutate(COLLECTION_DT=as.Date(COLLECTION_DT, "%m/%d/%y"),
+         MCoVNumber=str_remove(mcov_id, "-")) %>%
   arrange(COLLECTION_DT) %>% filter(!duplicated(PatientID))
 
 #samples we received that we're interested in (December 2020-November 2021)
