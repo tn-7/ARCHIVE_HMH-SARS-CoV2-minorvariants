@@ -119,7 +119,7 @@ f2 = mcov_samples_with_ct %>% ggplot(aes(INSTRUMENT_RESULT, log10(median_coverag
 f2 = ggMarginal(f2)
 
 runs_samples_dots = ggarrange(f1, f2, ncol = 1, nrow = 2, align = "v")
-#ggsave("#ggsave/runs_samples_dots.pdf", plot = runs_samples_dots, width = 3, height = 4.5)
+#ggsave("ggsave/runs_samples_dots.pdf", plot = runs_samples_dots, width = 3, height = 4.5)
 
 
 ```
@@ -174,7 +174,7 @@ run_filter_red = ggarrange(f3, f4, ncol = 1, nrow = 2, align = "v", common.legen
                top = text_grob("red circles: samples Ct>40", color = "red", size = 10))
 ))
 
-#ggsave("#ggsave/run_filter_red_plot.pdf", plot = run_filter_red_plot, width = 6, height = 4)
+#ggsave("ggsave/run_filter_red_plot.pdf", plot = run_filter_red_plot, width = 6, height = 4)
 ```
 
 ## Sample-level QC
@@ -222,7 +222,7 @@ plot1_ct_before_after = ggplot(aes(x=INSTRUMENT_RESULT), data = ct_distribution_
   xlab("Ct value") + ylab("# samples") #+ geom_vline(xintercept = 26,
                                                #     linetype = "dashed")
 
-#ggsave("#ggsave/plot1_ct_before_after.pdf", plot1_ct_before_after, height = 2, width = 4)
+#ggsave("ggsave/plot1_ct_before_after.pdf", plot1_ct_before_after, height = 2, width = 4)
 ```
 
 ## Preliminary minor variant distributions
@@ -326,7 +326,23 @@ n_var_select_ct = samples_n_var %>% filter(INSTRUMENT_RESULT<50) %>%
 plot1_target = ggMarginal(n_var_select_ct, type = "violin", draw_quantiles = 
              c(.25,.5,.75))
 
-#ggsave("#ggsave/plot1_target.pdf", plot = plot1_target, height = 3, width = 4)
+#ggsave("ggsave/plot1_target.pdf", plot = plot1_target, height = 3, width = 4)
+((
+n_var_select_ct_filtered = samples_n_var %>% 
+  filter(INSTRUMENT_RESULT<26 & n_var < 30) %>% 
+  ggplot(aes(x=INSTRUMENT_RESULT, y=n_var)) + 
+  geom_point(shape = 1, alpha = 1/8) + 
+  geom_density_2d(color = "salmon") + 
+#  scale_y_continuous(trans = "log1p", breaks = c(0,1,5,10,30,50,100,300,500)) +
+  scale_x_continuous(breaks = seq(0,40,by = 5)) +
+  theme_pubr() + xlab("Ct value") + ylab("n_var") +
+  geom_smooth(color = "red") + stat_cor(method = "spearman", cor.coef.name = "rho")
+))
+
+ct_n_var_postfilter_plot = ggMarginal(n_var_select_ct_filtered, 
+                                      type = "violin", 
+                                      draw_quantiles = c(0.25,0.5,0.75))
+
 
 
 # patient_data<-fread("sample_and_patient_data.csv",data.table=F)  %>% mutate(MCoVNumber=str_remove(mcov_id, "-")) %>% select(-COLLECTION_DT) %>% inner_join(samples_n_var)
@@ -342,6 +358,7 @@ plot1_target = ggMarginal(n_var_select_ct, type = "violin", draw_quantiles =
 #n_var_ct_zoom<-n_var_select_ct + annotate("rect", xmin=5, xmax=26, ymin=0, ymax=Inf, alpha=0.2, fill="gray") + theme_pubr
 #n_var_ct_zoom
 ```
+
 ```{r}
 # test_ct = patient_data %>% filter(INSTRUMENT_RESULT<40) %>% mutate(vaccine = if_else(Vaccine_Status=="No vaccine", 0, 1)) %>% ggplot(aes(x=INSTRUMENT_RESULT, y=n_var, color = as.factor(vaccine))) + geom_point(shape = 1, alpha = 1/8) + geom_density_2d(alpha = 1/2) + scale_y_continuous(trans = "log2", breaks = c(0,1,2,4,8,16,32,64, 128, 256))+
 #   scale_x_continuous(breaks = seq(0,40,by = 5)) +
@@ -431,7 +448,7 @@ a <- table(rep_mutations$major.original, rep_mutations$minor.original) %>%
   data.frame() %>% ggplot(aes(x=Var1, y=Var2, fill=Freq/sum(Freq))) + 
   geom_tile(colour = "black") + # grid colour
   scale_fill_gradient(low = "white",
-                      high = "steelblue") +
+                      high = "salmon") +
   theme_minimal() + labs(fill = "Fraction",
        x = "Consensus allele",
        y = "Minor allele", title="Reproducible minor variants")
@@ -440,7 +457,7 @@ b <- table(nonrep_mutations$major.original, nonrep_mutations$minor.original) %>%
   data.frame() %>% ggplot(aes(x=Var1, y=Var2, fill=Freq/sum(Freq))) + 
   geom_tile(colour = "black") + 
   scale_fill_gradient(low = "white",
-                      high = "steelblue") +
+                      high = "salmon") +
   theme_minimal() + labs(fill = "Fraction",
        x = "Consensus allele",
        y = "Minor allele", title="Non-reproducible minor variants")
@@ -452,7 +469,7 @@ rep_nucleotides = ggarrange(a, b, common.legend = T)
 #SUPP FIG 8
 rep_nucleotides
 
-#ggsave("#ggsave/heatmap_spectra_replicate_variants.pdf", rep_nucleotides, height = 4, width = 7)
+#ggsave("ggsave/heatmap_spectra_replicate_variants.pdf", rep_nucleotides, height = 4, width = 7)
 ```
 
 
@@ -474,7 +491,7 @@ replicate_mega_plot = plot_grid(
                       labels=c("b","c")), nrow=2, labels=c("a",NA)), 
   rep_indiv_samples, labels=c(NA, "d"), rel_widths=c(1.1,1))
 
-#ggsave("#ggsave/replicate_mega_plot.pdf", plot = replicate_mega_plot, height = 8, width = 14.5)
+#ggsave("ggsave/replicate_mega_plot.pdf", plot = replicate_mega_plot, height = 8, width = 14.5)
 
 ```
 
@@ -496,7 +513,7 @@ lineages_figure <- mcov_samples_filtered %>%
             startsWith(scorpio_call,"Alpha")) ~ "other lineages")) %>%
   mutate(variant=if_else(lineage == "B.1.2","B.1.2",variant)) %>%
   ggplot(aes(x=COLLECTION_DT)) + geom_bar(aes(fill=variant)) + theme_bw() + 
-  scale_fill_manual(values=c("#00A08A", "#F2AD00", "#F98400", "#5BBCD6")) + 
+#  scale_fill_manual(values=c("#00A08A", "#F2AD00", "#F98400", "#5BBCD6")) + 
   xlab("Collection date") + ylab("No. samples") + 
   ggtitle(paste0('Final sample set, Ct<26 & n_var<30, n = ',length(samples_to_analyze))) + 
   scale_x_date(minor_breaks="1 month") + theme_pubr()
@@ -504,7 +521,7 @@ lineages_figure <- mcov_samples_filtered %>%
 #SUPP FIG 2
 lineages_figure
 
-#ggsave("#ggsave/lineages_figure.pdf", plot = lineages_figure, height = 6, width = 6 )
+#ggsave("ggsave/lineages_figure.pdf", plot = lineages_figure, height = 6, width = 6 )
 ```
 
 ```{r}
@@ -534,11 +551,11 @@ minor_sites_lowct<-minor_variant_sites_threshold %>% left_join(mcov_samples_filt
 ```{r}
 #are run effects related to sequencing depth?
 n_var_by_coverage<-samples_n_var %>% filter(INSTRUMENT_RESULT<26 & n_var < 30) %>% ggplot(aes(x=median_coverage, y=n_var)) + geom_point(alpha=0.1) + 
-  geom_density_2d(color = "lightblue") + geom_smooth() + theme_bw() + xlab("Sample median coverage") + ylab("n_var")
+  geom_density_2d(color = "salmon") + geom_smooth(color = "red") + theme_bw() + xlab("Sample median coverage") + ylab("n_var")
 #not on the individual sample level
 
 #is average minor variant richness in a run related to average depth of coverage in the run?
-n_var_depth_averages<-samples_n_var %>% filter(INSTRUMENT_RESULT<26 & n_var < 30) %>% group_by(run) %>% summarise(median_n_var=median(n_var), median_sample_coverage=median(median_coverage), median_ct=median(INSTRUMENT_RESULT)) %>% ggplot(aes(x=median_sample_coverage, y=median_n_var)) + geom_point() + theme_bw() + xlab("Run median of median coverage") + ylab("Run median n_var") + geom_smooth(method=lm) 
+n_var_depth_averages<-samples_n_var %>% filter(INSTRUMENT_RESULT<26 & n_var < 30) %>% group_by(run) %>% summarise(median_n_var=median(n_var), median_sample_coverage=median(median_coverage), median_ct=median(INSTRUMENT_RESULT)) %>% ggplot(aes(x=median_sample_coverage, y=median_n_var)) + geom_point() + theme_bw() + xlab("Run median of median coverage") + ylab("Run median n_var") + geom_smooth(method=lm, color = "red") 
 ```
 
 ```{r}
@@ -561,5 +578,5 @@ run_post_filter = plot_grid(n_var_by_run, plot_grid(n_var_by_coverage, n_var_dep
 
 run_post_filter
 
-#ggsave("#ggsave/run_post_filter.pdf", plot = run_post_filter, width = 8, height = 4)
+#ggsave("ggsave/run_post_filter.pdf", plot = run_post_filter, width = 8, height = 4)
 ```

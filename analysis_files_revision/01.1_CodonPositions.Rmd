@@ -208,7 +208,7 @@ plot1_codon_counts = plot_grid(n30plus,
           nrow = 2, ncol = 1, 
           align = "hv")
 
-ggsave("ggsave/plot1_codon_counts.pdf", plot1_codon_counts, height = 4, width = 4)
+#ggsave("ggsave/plot1_codon_counts.pdf", plot1_codon_counts, height = 4, width = 4)
 ```
 # CODON BIAS EDA
 More codon bias stuff
@@ -301,5 +301,5 @@ hist = ggplot(data = patient_counts, aes(x = n_var)) +
 
 quantile(patient_counts$n_var, probs = c(0.05,0.1, .25,.5,.75, .90, 0.95))
 ((plot1_histogram = plot_grid(hist, p, align = "v", nrow = 2)))
-ggsave("ggsave/plot1_histogram.pdf", plot = plot1_histogram, width = 4, height = 4)
+#ggsave("ggsave/plot1_histogram.pdf", plot = plot1_histogram, width = 4, height = 4)
 ```
