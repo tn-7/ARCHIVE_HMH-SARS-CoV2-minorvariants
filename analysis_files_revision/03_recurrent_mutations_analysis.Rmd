@@ -67,7 +67,7 @@ minor_prevalence_across_genome_unlog <- minor_consensus_plotdata %>%
 minor_prevalence_across_genome_unlog_labeled = 
   minor_prevalence_across_genome_unlog + 
   geom_text_repel(ylim  = c(500,NA), size = 3, angle = 90, segment.linetype = 3,
-                    segment.size = 0.4, segment.curvature = -1e-20, 
+                    segment.size = 0.6, segment.curvature = -1e-20, 
                     arrow = arrow(length = unit(0.015, "npc"), type = "closed"),
                     data = minor_consensus_plotdata %>% group_by(ntpos) %>% 
                       tally() %>% filter(n > nrow(patient_counts_30)*0.02) %>% 
