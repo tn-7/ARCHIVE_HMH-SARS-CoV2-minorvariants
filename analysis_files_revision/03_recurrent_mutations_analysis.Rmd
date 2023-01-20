@@ -17,18 +17,6 @@ consensus_sites_lowct
 
 
 ```{r}
-#mutation type
-hmap<-table(patient_var_30$major[patient_var_30$major!=""], patient_var_30$minor[patient_var_30$minor!=""]) %>% data.frame() %>%
-  ggplot(aes(x=Var1, y=Var2, fill=Freq/sum(Freq))) + geom_tile(colour = "black") + # grid color
-  scale_fill_gradient(low = "white",
-                      high = "darkblue") +
-  theme_minimal() +   labs(fill = "Number",
-       x = "Consensus allele",
-       y = "Minor allele")#Most frequently C>T mutations
-hmap
-```
-
-```{r}
 # Across genome
 
 consensus = consensus_sites_lowct %>% select(MCoVNumber, ntpos) %>% 
@@ -325,4 +313,33 @@ tally_in_gisaid<-fread('hss_gisaid_tallies.csv', data.table = F) %>% select(ntpo
 ))
 
 #ggsave("ggsave/gisaid_vs_hmh_plot.pdf", plot = gisaid_vs_hmh_plot, width = 6, height = 5)
+```
+
+```{r}
+# MUTATION SPECTRA ANALYSIS
+
+# reproducibility analysis from RMD 01
+plot_nonreproducible_spectra_heatmap = readRDS(file = "plot_nonreproducible_spectra_heatmap.rds")
+plot_reproducible_spectra_heatmap = readRDS(file = "plot_reproducible_spectra_heatmap.rds")
+
+hmap<-table(patient_var_30$major[patient_var_30$major!=""], patient_var_30$minor[patient_var_30$minor!=""]) %>% data.frame() %>%
+  ggplot(aes(x=Var1, y=Var2, fill=Freq/sum(Freq))) + geom_tile(colour = "black") + # grid color
+  scale_fill_gradient(low = "white",
+                      high = "darkblue") +
+  theme_minimal() +   labs(fill = "Number",
+       x = "Consensus allele",
+       y = "Minor allele")#Most frequently C>T mutations
+
+# Now beecause some peaks are really prevalent like the twin peaks at 29, it's important to note
+
+
+
+
+((
+  rep_nucleotides = ggarrange(plot_nonreproducible_spectra_heatmap, plot_reproducible_spectra_heatmap, hmap, ncol=3, common.legend = T)
+))
+
+#ggsave("ggsave/heatmap_spectra_replicate_variants.pdf", rep_nucleotides, height = 3, width = 8)
+
+
 ```

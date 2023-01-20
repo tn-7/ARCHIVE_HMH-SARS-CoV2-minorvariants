@@ -72,6 +72,10 @@ major_string = data.frame(first = c("major", "ref.2", "ref.3"),
                  second = c("ref.1", "major", "ref.3"), 
                  third = c("ref.1", "ref.2", "major"));
 minor_string = major_string %>% mutate( across(.cols = everything(), ~str_replace(., "major", "minor")))
+# major flaw in the above is that it assumes there are no more than 1 mutation 
+# (minor or major) in the same codon. For us it does not matter, because we are doing codon analysis
+# involving just positional importance not actual amino acid conversion analysis. Thus the above is
+# just rough codon sequence analysis.
 
 for (i in 1:3) {
     idx = (var_aa$codon_pos == i)
@@ -87,7 +91,6 @@ var_aa = var_aa %>% left_join(codon_translate %>% select(majorcodon = ref_codon,
     mutate(majoraa = tmp_sym) %>% select(!tmp_sym) %>% select(!c(gene_id, ref.1, ref.2, ref.3))
 #fwrite(var_aa, "processing/var_aa.txt", sep = "\t", quote = F)
 #fwrite(var_aa %>% full_join(samples_n_var), "processing/var_aa_ct.txt", sep = "\t", quote = F)
-
 
 # write out the new file in processing
 ```

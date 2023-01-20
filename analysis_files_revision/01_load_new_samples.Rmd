@@ -446,7 +446,7 @@ rep_depth_freq <- minors_table %>% ggplot(aes(x=totalcount.original, y=minorfreq
 rep_mutations <- minors_table %>% filter(detected_minor_in_repl=="yes") 
 nonrep_mutations <- minors_table %>% filter(detected_minor_in_repl=="no") 
 
-a <- table(rep_mutations$major.original, rep_mutations$minor.original) %>% 
+plot_reproducible_spectra_heatmap <- table(rep_mutations$major.original, rep_mutations$minor.original) %>% 
   data.frame() %>% ggplot(aes(x=Var1, y=Var2, fill=Freq/sum(Freq))) + 
   geom_tile(colour = "black") + # grid colour
   scale_fill_gradient(low = "white",
@@ -455,7 +455,9 @@ a <- table(rep_mutations$major.original, rep_mutations$minor.original) %>%
        x = "Consensus allele",
        y = "Minor allele", title="Reproducible")
 
-b <- table(nonrep_mutations$major.original, nonrep_mutations$minor.original) %>% 
+
+plot_nonreproducible_spectra_heatmap <- table(nonrep_mutations$major.original,
+                                              nonrep_mutations$minor.original) %>% 
   data.frame() %>% ggplot(aes(x=Var1, y=Var2, fill=Freq/sum(Freq))) + 
   geom_tile(colour = "black") + 
   scale_fill_gradient(low = "white",
@@ -464,14 +466,10 @@ b <- table(nonrep_mutations$major.original, nonrep_mutations$minor.original) %>%
        x = "Consensus allele",
        y = "Minor allele", title="Non-reproducible")
 
-#rep_nucleotides <- cowplot::plot_grid(a, b, ncol=2)
+saveRDS(plot_nonreproducible_spectra_heatmap, file = "plot_nonreproducible_spectra_heatmap.rds")
+saveRDS(plot_reproducible_spectra_heatmap, file = "plot_reproducible_spectra_heatmap.rds")
 
-rep_nucleotides = ggarrange(a, b, hmap, ncol=3, common.legend = T)
-
-#SUPP FIG 8
-rep_nucleotides
-
-#ggsave("ggsave/heatmap_spectra_replicate_variants.pdf", rep_nucleotides, height = 3, width = 8)
+# Plotted in RMD 03.
 ```
 
 

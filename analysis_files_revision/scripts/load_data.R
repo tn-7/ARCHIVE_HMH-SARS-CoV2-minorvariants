@@ -145,9 +145,13 @@ patient_var_tmp = fread("processing/var_aa_ct.txt", data.table = F) %>%
   left_join(sample_duration %>% select(-COLLECTION_DT))
 
 #### ACTUAL PATIENT ANALYSIS FOR 02 RMD.
-patient_var = patient_var_tmp %>% filter(INSTRUMENT_RESULT < 26 & 
-                                           minor %in% c("A","C", "T", "G") & 
-                                           major %in% c("A","C","T","G"))
+patient_var = patient_var_tmp %>% filter(INSTRUMENT_RESULT < 26)# & 
+                                           #minor %in% c("A","C", "T", "G") & 
+                                           #major %in% c("A","C","T","G"))
+# the reason you get minor or major that isn't defined hence attempting the filter above
+# with nucleotides is because 853 samples have no minor variants n_var == 0. So you want
+# to keep that to represent the zeros.
+
 patient_var_30 = patient_var %>% filter(n_var < 30)
 
 
@@ -155,11 +159,13 @@ patient_counts = patient_var %>% select(MCoVNumber,lineage,Duration,COLLECTION_D
 patient_counts_30 = patient_counts %>% filter(n_var < 30)
 
 
-# Spectra analysis post filter
-hmap<-table(patient_var_30$major[patient_var_30$major!=""], patient_var_30$minor[patient_var_30$minor!=""]) %>% data.frame() %>%
+# Spectra analysis post filter from RMD 03
+hmap<-table(patient_var_30$major[patient_var_30$major!=""], 
+            patient_var_30$minor[patient_var_30$minor!=""]) %>% data.frame() %>%
   ggplot(aes(x=Var1, y=Var2, fill=Freq/sum(Freq))) + geom_tile(colour = "black") + # grid color
   scale_fill_gradient(low = "white",
                       high = "darkblue") +
   theme_minimal() +   labs(fill = "Fraction",
                            x = "Consensus allele",
                            y = "Minor allele", title="Post-filter minor variants")
+
