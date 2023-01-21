@@ -6,6 +6,8 @@ output: html_notebook
 ```{r, fig.width = 2, fig.height = 2.5}
 source("./scripts/startup.R")
 source("./scripts/load_data.R")
+library(magrittr)
+
   
 gene_counts = patient_var_30 %>% #left_join(immunocompromised) %>%
   #filter(admitted_hospital == 1) %>%
@@ -17,6 +19,13 @@ gene_counts = patient_var_30 %>% #left_join(immunocompromised) %>%
 
 genes = patient_var %>% pull(gene) %>% unique
 
+patient_counts_uni_tmp = fread("processing/patient_counts_for_modeling.txt", data.table = F)
+exclude = c("lineage", "MCoVNumber" , "COLLECTION_DT" , "run",
+            "filename", "fraction_100x_coverage", "fraction_200x_coverage",
+            "fraction_500x_coverage", "n", "mcov_id",
+            "run_group", "RECEIVE_DT","VERIFIED_DT", "ordinal_counts")
+
+  
 include = colnames(patient_counts_uni_tmp) %>% as.data.frame %>% 
   filter(!. %in% exclude) %>% filter(str_detect(.,'__')) %>% pull(.)
 meta = patient_counts_uni_tmp %>% select(c("MCoVNumber", include,"n_var")) %>%
@@ -56,13 +65,12 @@ enrichment = function(y, genes) {
   }
   out = out %>% left_join(probs %>% mutate(gene = gene_id))
   
-  library(magrittr)
   
   # plot the bars total, admitted, not admitted; vaccine, no vaccine; mab vs no mab.
   out = out %>% mutate(fc = out$estimate / out$prop) %>% arrange(fc)
   out$gene = factor(out$gene, out$gene)
-  out$enriched = (out$estimate > out$prop)
-  out[out$p.value > 0.001,] %<>% mutate(enriched = NA)
+  out$enriched = (out$estimate > out$prop | out$estimate < out$prop)
+  out[out$p.value > 0.0001,] %<>% mutate(enriched = FALSE)
   return(out)
 }
 out = enrichment(y, genes)
@@ -74,6 +82,31 @@ out %>% ggplot(aes(y = prop, x = gene, fill = enriched)) +
   ylab("log2FC (observed / expected_counts)")
 # color based on enriched or negative
 ```
+
+```{r}
+# conduct the enrichment plot where you compare observed vs. expected 
+# but it's based on a matrix of unique counts at positions instead
+
+unique_gene_counts = patient_var_30 %>% unite(col = "spectra_mutation", 
+                                            major, ntpos, minor, remove = FALSE) %>% 
+  select(gene, major, minor, spectra_mutation) %>% unique() %>% group_by(gene) %>% 
+  summarize(g_var = n()) %>% filter(gene != "") %>%
+  pivot_wider(names_from = "gene", values_from = g_var, values_fill = 0)
+
+unique_out = enrichment(unique_gene_counts, genes) %>% mutate(mutation = "unique")
+unique_all = rbind(out %>% mutate(mutation = "all"), unique_out)
+
+unique_all_enrichment_plot = unique_all %>% ggplot(aes(y = prop, x = gene, color = mutation)) + 
+  geom_errorbar(aes(x = gene, ymin = log2(conf.low/prop), 
+                    ymax = log2(conf.high/prop)), 
+                position=position_dodge(width=0.3)) +
+  theme_minimal() + coord_flip() + geom_hline(yintercept = 0, linetype = "dashed") +
+  ylab("log2FC (observed / expected_counts)")
+
+#ggsave("ggsave/unique_all_enrichment_plot.pdf", unique_all_enrichment_plot, height = 4, width = 4)
+
+```
+
 
 ```{r}
 y_with_patient = gene_counts_meta_tmp %>% select(one_of(genes), vaccine_status___1, admitted_hospital___1, mAb___1)
@@ -102,6 +135,8 @@ out_vaccine = (enrichment(y_with_patient %>%
   theme_pubr() + coord_flip() + geom_hline(yintercept = 0, linetype = "dashed") +
   ylab("log2FC (observed / expected_counts)")
 
+out_vaccine
+
 out_mAb = (enrichment(y_with_patient %>% 
       filter(mAb___1 == "YES"), genes) %>%
   mutate(condition = "Inpatient")) %>% rbind(
@@ -117,4 +152,5 @@ out_admitted_hospital_no = enrichment(y_with_patient %>% filter(admitted_hospita
 out_admitted_hospital_no = enrichment(y_with_patient %>% filter(admitted_hospital___1 == "NO"), genes)
 
 ```
+
 

@@ -345,8 +345,6 @@ mutation_spectra_counts$n %>% quantile() # median is 1
 
 mutation_spectra_unique = mutation_spectra %>% 
   select(major, minor, spectra_mutation) %>% unique()
-  
-
 
 hmap_unique <-table(mutation_spectra_unique$major[mutation_spectra_unique$major!=""], mutation_spectra_unique$minor[mutation_spectra_unique$minor!=""]) %>% data.frame() %>%
   ggplot(aes(x=Var1, y=Var2, fill=Freq/sum(Freq))) + geom_tile(colour = "black") + # grid color
