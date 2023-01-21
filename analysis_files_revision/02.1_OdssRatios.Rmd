@@ -13,7 +13,7 @@ source("./scripts/load_data.R")
 
 Demonstrate whether a linear regression can be fit or not
 ```{r}
-tmp = patient_counts
+tmp = patient_counts_30
 p = ggplot(tmp, aes(sample = n_var)) + stat_qq() + stat_qq_line() + theme_pubr()
 q = ggplot(tmp, aes(sample = log10(n_var+1))) + stat_qq() + stat_qq_line() + theme_pubr()
 plot_grid(p, q)
@@ -21,18 +21,20 @@ plot_grid(p, q)
 
 ```{r}
 patient_counts_30 = patient_counts_30 %>% mutate(admitted_hospital = as.factor(admitted_hospital))
- 
-((plot_admitted = ggplot(patient_counts_30, aes(x = INSTRUMENT_RESULT, 
-                                              y = n_var, color = admitted_hospital)) + 
-        geom_density_2d(aes(color = admitted_hospital)) + stat_cor(method = "spearman") +
-    geom_smooth(method = "lm", se=TRUE) + theme_pubr()))
 
+plot_admitted = patient_counts_30 %>% group_by(admitted_hospital) %>% 
+  ggplot(aes(x = INSTRUMENT_RESULT, y = n_var, color = admitted_hospital)) + 
+  geom_point(shape = "") +
+        geom_density_2d(aes(color = vaccine_status)) + stat_cor(method = "spearman", cor.coef.name = "rho") +
+    geom_smooth(se=TRUE) + theme_pubr() + scale_y_continuous(trans="log1p", 
+                                                             breaks = c(0,1,2,5,10,15,20,25,30))
+((
+  plot_admitted_marginal_by_ct = ggMarginal(plot_admitted, type = "violin", 
+                                            draw_quantiles = c(0,0.25,0.5, 0.75),
+             groupColour = TRUE, groupFill = TRUE)
+))
 
-plot_admitted = ggplot(patient_counts_30, aes(x = INSTRUMENT_RESULT, 
-                                              y = n_var, color = vaccine_status)) + 
-        geom_density_2d(aes(color = vaccine_status)) + stat_cor(method = "spearman") +
-    geom_smooth(se=TRUE) + theme_pubr() + scale_y_continuous(trans="log1p")
-plot_admitted
+#ggsave("ggsave/plot_admitted_marginal_by_ct.pdf", plot_admitted_marginal_by_ct, height = 5, width = 6)
 ```
 
 
