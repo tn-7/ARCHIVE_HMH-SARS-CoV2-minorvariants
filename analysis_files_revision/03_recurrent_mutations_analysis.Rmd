@@ -323,23 +323,54 @@ plot_nonreproducible_spectra_heatmap = readRDS(file = "plot_nonreproducible_spec
 plot_reproducible_spectra_heatmap = readRDS(file = "plot_reproducible_spectra_heatmap.rds")
 
 hmap<-table(patient_var_30$major[patient_var_30$major!=""], patient_var_30$minor[patient_var_30$minor!=""]) %>% data.frame() %>%
-  ggplot(aes(x=Var1, y=Var2, fill=Freq/sum(Freq))) + geom_tile(colour = "black") + # grid color
+  ggplot(aes(x=Var1, y=Var2, fill=Freq/sum(Freq))) + geom_tile(colour = "black") +
   scale_fill_gradient(low = "white",
                       high = "darkblue") +
   theme_minimal() +   labs(fill = "Number",
        x = "Consensus allele",
-       y = "Minor allele")#Most frequently C>T mutations
+       y = "Minor allele", title = "Post-sample filter (Ct, n_var)") #Most frequently C>T mutations
 
-# Now beecause some peaks are really prevalent like the twin peaks at 29, it's important to note
+# Now beecause some peaks are really prevalent like the twin peaks at 29187/8, 
+# it's important to not factor that in too much. So let's just assign those mutations
+# to equate to the median number a mutation appears which is 1.
+
+mutation_spectra = patient_var_30 %>% unite(col = "spectra_mutation", 
+                                            major, ntpos, minor, remove = FALSE)
+mutation_spectra_counts = mutation_spectra %>% count(spectra_mutation)
+
+mutation_spectra_counts %>% ggplot(aes(y=n)) + geom_boxplot() + 
+  scale_y_continuous(trans = "log1p")
+
+mutation_spectra_counts$n %>% quantile() # median is 1
+
+mutation_spectra_unique = mutation_spectra %>% 
+  select(major, minor, spectra_mutation) %>% unique()
+  
 
 
+hmap_unique <-table(mutation_spectra_unique$major[mutation_spectra_unique$major!=""], mutation_spectra_unique$minor[mutation_spectra_unique$minor!=""]) %>% data.frame() %>%
+  ggplot(aes(x=Var1, y=Var2, fill=Freq/sum(Freq))) + geom_tile(colour = "black") + # grid color
+  scale_fill_gradient(limits = c(0,0.4), low = "white",
+                      high = "darkblue") +
+  theme_minimal() +   labs(fill = "Fraction",
+       x = "Consensus allele",
+       y = "Minor allele", title="Unique minor variants")
 
+rescale_fill = function(hmap_unique) {
+  hmap_unique_rescaled = hmap_unique + 
+    scale_fill_gradient(limits = c(0,0.4), low = "white",
+                      high = "darkblue") +
+    geom_label(fill = "white", alpha = 0.3, aes(x = Var1, y = Var2, label = round(Freq/sum(Freq), digits = 2)))
+  return(hmap_unique_rescaled)
+}
 
 ((
-  rep_nucleotides = ggarrange(plot_nonreproducible_spectra_heatmap, plot_reproducible_spectra_heatmap, hmap, ncol=3, common.legend = T)
+  rep_nucleotides = ggarrange(rescale_fill(plot_nonreproducible_spectra_heatmap), 
+                              rescale_fill(plot_reproducible_spectra_heatmap), 
+                              rescale_fill(hmap), 
+                              rescale_fill(hmap_unique), common.legend = T)
 ))
+rep_nucleotides
 
-#ggsave("ggsave/heatmap_spectra_replicate_variants.pdf", rep_nucleotides, height = 3, width = 8)
-
-
+#ggsave("ggsave/heatmap_spectra_replicate_variants.pdf", rep_nucleotides, height = 6, width = 6)
 ```
