@@ -105,7 +105,7 @@ unique_all_enrichment_plot = unique_all %>% ggplot(aes(y = prop, x = gene, color
 
 unique_all_enrichment_plot
 
-#ggsave("ggsave/unique_all_enrichment_plot.pdf", unique_all_enrichment_plot, height = 4, width = 4)
+#ggsave("ggsave/unique_all_enrichment_plot.pdf", unique_all_enrichment_plot, height = 4, width = 3.5)
 
 ```
 
