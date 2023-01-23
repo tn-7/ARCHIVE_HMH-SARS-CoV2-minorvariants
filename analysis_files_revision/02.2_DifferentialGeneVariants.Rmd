@@ -153,6 +153,9 @@ out_mAb = (enrichment(y_with_patient %>%
 out_admitted_hospital_no = enrichment(y_with_patient %>% filter(admitted_hospital___1 == "NO"), genes)
 out_admitted_hospital_no = enrichment(y_with_patient %>% filter(admitted_hospital___1 == "NO"), genes)
 
+
+ggsave("ggsave/differential_genes_admitted_hospital.pdf", out_admitted_hospital, height = 5, width = 4.5)
+
 ```
 
 
