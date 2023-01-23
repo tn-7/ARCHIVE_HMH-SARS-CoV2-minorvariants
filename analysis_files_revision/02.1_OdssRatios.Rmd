@@ -17,7 +17,57 @@ tmp = patient_counts_30
 p = ggplot(tmp, aes(sample = n_var)) + stat_qq() + stat_qq_line() + theme_pubr()
 q = ggplot(tmp, aes(sample = log10(n_var+1))) + stat_qq() + stat_qq_line() + theme_pubr()
 plot_grid(p, q)
+
+
+library(devtools)
+#install_url("https://cran.r-project.org/src/contrib/Archive/qualityTools/qualityTools_1.55.tar.gz")
+#install.packages("qualityTools")
+library(qualityTools)
+qqPlot(log2(patient_counts_30$n_var+1), "normal")
 ```
+# INSERT LASSO DISTRIBUTION FOR LOG2 ON z transformed CONT. INPUTS
+
+```{r}
+#p_sub<- p %>% left_join(mcov_samples_filtered) #to add info about coverage
+
+lasso_xy = function(x, y) {
+  cv_model <- cv.glmnet(x, y, alpha = 1, nfolds=100)
+plot(cv_model) 
+best_model <- glmnet(x, y, alpha = 1, lambda = cv_model$lambda.min)
+best_model$dev.ratio
+  lasso_coef = coef(best_model) %>% as.matrix() %>% data.frame() %>% rownames_to_column() %>% 
+  select(factor=rowname, coefficient=s0) %>% filter(factor!="(Intercept)") %>% 
+  arrange(desc(coefficient))
+  return(lasso_coef)
+}
+
+p_sub = patient_var_tmp %>% select(MCoVNumber,lineage,Duration,COLLECTION_DT:high_counts) %>% 
+  unique %>% filter(n_var < 30 & CT < 26)
+y<-log2(p_sub$n_var+1)
+x<-data.matrix(p_sub[, colnames(p_sub) %in% c('Duration','age18under','age55plus','sex','chronic_lung_disease', 'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 'hypertension', 'diabetes', 'cancer', 'obesity', 'plasma', 'mAb', 'admitted_hospital','vaccine_status','vocAlpha','vocDelta','collection_month','surveillance_sample','CT','median_coverage','run')])
+
+p_sub_over = patient_var_tmp %>% select(MCoVNumber,lineage,Duration,COLLECTION_DT:high_counts) %>% 
+  unique %>% filter(n_var > 30 & CT > 26)
+y_over<-log2(p_sub_over$n_var+1)
+x_over<-data.matrix(p_sub_over[, colnames(p_sub_over) %in% c('Duration','age18under','age55plus','sex','chronic_lung_disease', 'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 'hypertension', 'diabetes', 'cancer', 'obesity', 'plasma', 'mAb', 'admitted_hospital','vaccine_status','vocAlpha','vocDelta','collection_month','surveillance_sample','CT','median_coverage','run')])
+
+
+lasso_under_30 = lasso_xy(x,y) %>% mutate(cutoff = "n_var_under_30")
+lasso_over_30 = lasso_xy(x_over, y_over) %>% mutate(cutoff = "n_var_over_30")
+
+lasso_bio_vs_artifact = rbind(lasso_under_30, lasso_over_30)
+
+spread_heatmap = lasso_bio_vs_artifact %>% spread(., cutoff, coefficient) %>% 
+ggplot(aes(x = n_var_over_30, y = n_var_under_30, label = factor)) + geom_point() + geom_hline(yintercept = 0) + geom_vline(xintercept = 0) + 
+  geom_label_repel(max.overlaps = Inf, alpha = 0.3,
+    segment.size      = 0.5,
+    segment.curvature = -0.1
+  ) + 
+  theme_minimal()
+spread_heatmap
+
+```
+
 
 ```{r}
 patient_counts_30 = patient_counts_30 %>% mutate(admitted_hospital = as.factor(admitted_hospital))
@@ -39,7 +89,8 @@ plot_admitted = patient_counts_30 %>% group_by(admitted_hospital) %>%
 
 
 
-Univariate table
+##### NEED TO USE PATIENT COUNTS 30
+Univariate table, need to change this to 
 ```{r}
 patient_counts_uni = patient_counts %>% 
   mutate(ordinal_counts = cut(n_var, breaks = seq(0,30,5))) %>%
@@ -147,6 +198,7 @@ out_odds = unitable(patient_counts_uni_tmp, include, dv = "ordinal_counts")
 #out_odds_outlier = unitable(patient_counts_uni_tmp, include, dv = "high_counts")
 #fwrite(out_odds_outlier, "output/OR_greater50counts.txt", sep = "\t")
 ```
+
 
 
 

@@ -100,7 +100,7 @@ unique_all_enrichment_plot = unique_all %>% ggplot(aes(y = prop, x = gene, color
   geom_errorbar(aes(x = gene, ymin = log2(conf.low/prop), 
                     ymax = log2(conf.high/prop)), 
                 position=position_dodge(width=0.3)) +
-  theme_minimal() + coord_flip() + geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_minimal() + theme(legend.position = "top") + coord_flip() + geom_hline(yintercept = 0, linetype = "dashed") +
   ylab("log2FC (observed / expected_counts)")
 
 unique_all_enrichment_plot
