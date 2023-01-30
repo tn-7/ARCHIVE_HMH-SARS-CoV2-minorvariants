@@ -13,17 +13,13 @@ source("./scripts/load_data.R")
 
 Demonstrate whether a linear regression can be fit or not
 ```{r}
-tmp = patient_counts_30
-p = ggplot(tmp, aes(sample = n_var)) + stat_qq() + stat_qq_line() + theme_pubr()
-q = ggplot(tmp, aes(sample = log10(n_var+1))) + stat_qq() + stat_qq_line() + theme_pubr()
-plot_grid(p, q)
-
-
 library(devtools)
 #install_url("https://cran.r-project.org/src/contrib/Archive/qualityTools/qualityTools_1.55.tar.gz")
 #install.packages("qualityTools")
 library(qualityTools)
-qqPlot(log2(patient_counts_30$n_var+1), "normal")
+pdf("ggsave/qqlasso.pdf", width = 4, height = 4)
+qqlasso = qqPlot(log2(patient_counts_30$n_var+1), "normal")
+dev.off()
 ```
 # INSERT LASSO DISTRIBUTION FOR LOG2 ON z transformed CONT. INPUTS
 
@@ -57,14 +53,16 @@ lasso_over_30 = lasso_xy(x_over, y_over) %>% mutate(cutoff = "n_var_over_30")
 
 lasso_bio_vs_artifact = rbind(lasso_under_30, lasso_over_30)
 
-spread_heatmap = lasso_bio_vs_artifact %>% spread(., cutoff, coefficient) %>% 
-ggplot(aes(x = n_var_over_30, y = n_var_under_30, label = factor)) + geom_point() + geom_hline(yintercept = 0) + geom_vline(xintercept = 0) + 
+lasso_xy_plot = lasso_bio_vs_artifact %>% spread(., cutoff, coefficient) %>% 
+ggplot(aes(x = n_var_over_30, y = n_var_under_30, label = factor)) + geom_point() + 
   geom_label_repel(max.overlaps = Inf, alpha = 0.3,
     segment.size      = 0.5,
     segment.curvature = -0.1
-  ) + 
-  theme_minimal()
-spread_heatmap
+  ) + geom_hline(yintercept = 0) + geom_vline(xintercept = 0) + 
+  theme_minimal() + ylab("LASSO coef. on log2(n_var+1), Ct<26 & n_var<30\nhypothesized biological data") + 
+  xlab("LASSO coef. on log2(n_var+1), Ct>26 & n_var>30\nhypothesized nonbiological data")
+lasso_xy_plot
+#ggsave("ggsave/lasso_xy_plot.pdf", lasso_xy_plot, height = 5, width = 5)
 
 ```
 
@@ -87,12 +85,11 @@ plot_admitted = patient_counts_30 %>% group_by(admitted_hospital) %>%
 #ggsave("ggsave/plot_admitted_marginal_by_ct.pdf", plot_admitted_marginal_by_ct, height = 5, width = 6)
 ```
 
-
-
 ##### NEED TO USE PATIENT COUNTS 30
 Univariate table, need to change this to 
+
 ```{r}
-patient_counts_uni = patient_counts %>% 
+patient_counts_uni = patient_counts_30 %>% 
   mutate(ordinal_counts = cut(n_var, breaks = seq(0,30,5))) %>%
   select(-c(collection_month,INSTRUMENT_RESULT)) %>%
   mutate(z__fraction_1000x_coverage = scale(fraction_1000x_coverage)) %>%
@@ -101,6 +98,27 @@ patient_counts_uni = patient_counts %>%
   mutate(z__CT = scale(CT)) %>%
   mutate(z__Duration = scale(Duration)) %>%
   select(-c(fraction_1000x_coverage, median_coverage, collection_date))
+
+test = patient_counts_uni %>% select(any_of(
+  c('n_var','z__Duration','age18under','age55plus','sex','chronic_lung_disease', 'chronic_liver_disease',
+    'chronic_kidney_disease', 'chronic_heart_disease', 'hypertension', 'diabetes', 'cancer',
+    'obesity', 'plasma', 'mAb','admitted_hospital','vaccine_status','vocAlpha','vocDelta',
+    'collection_month','surveillance_sample','CT','median_coverage','run')))
+```
+
+
+
+```{r}
+patient_counts_uni = patient_counts_30 %>% 
+  mutate(ordinal_counts = cut(n_var, breaks = seq(0,30,5))) %>%
+  select(-c(collection_month,INSTRUMENT_RESULT)) %>%
+  mutate(z__fraction_1000x_coverage = scale(fraction_1000x_coverage)) %>%
+  mutate(z__median_coverage = scale(median_coverage)) %>%
+  mutate(z__collection_date = scale(collection_date)) %>%
+  mutate(z__CT = scale(CT)) %>%
+  mutate(z__Duration = scale(Duration)) %>%
+  select(-c(fraction_1000x_coverage, median_coverage, collection_date))
+
 
 factor2binary = function(patient_counts_uni, columns) {
   index = 0
