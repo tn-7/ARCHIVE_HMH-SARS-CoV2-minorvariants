@@ -17,20 +17,20 @@ library(devtools)
 #install_url("https://cran.r-project.org/src/contrib/Archive/qualityTools/qualityTools_1.55.tar.gz")
 #install.packages("qualityTools")
 library(qualityTools)
-pdf("ggsave/qqlasso.pdf", width = 4, height = 4)
+#pdf("ggsave/qqlasso.pdf", width = 4, height = 4)
 qqlasso = qqPlot(log2(patient_counts_30$n_var+1), "normal")
-dev.off()
+#dev.off()
 ```
 # INSERT LASSO DISTRIBUTION FOR LOG2 ON z transformed CONT. INPUTS
 
 ```{r}
 #p_sub<- p %>% left_join(mcov_samples_filtered) #to add info about coverage
 
-lasso_xy = function(x, y) {
-  cv_model <- cv.glmnet(x, y, alpha = 1, nfolds=100)
-plot(cv_model) 
-best_model <- glmnet(x, y, alpha = 1, lambda = cv_model$lambda.min)
-best_model$dev.ratio
+lasso_xy = function(x, y, family = "gaussian") {
+  cv_model <- cv.glmnet(x, y, alpha = 1, family = family, nfolds=100)
+  plot(cv_model) 
+  best_model <- glmnet(x, y, alpha = 1, family = family, lambda = cv_model$lambda.min)
+  best_model$dev.ratio
   lasso_coef = coef(best_model) %>% as.matrix() %>% data.frame() %>% rownames_to_column() %>% 
   select(factor=rowname, coefficient=s0) %>% filter(factor!="(Intercept)") %>% 
   arrange(desc(coefficient))
@@ -66,6 +66,62 @@ lasso_xy_plot
 
 ```
 
+# Screening boxplots and using Wilcoxon Rank Sum test
+
+```{r}
+tmp = patient_counts_30 %>% filter(collection_date>="2021-07-01") %>% 
+  filter(admitted_hospital == 1)
+
+clinical_factors = c('sex','chronic_lung_disease', 'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 'transplant_patient', 'hiv', 'hypertension', 'diabetes', 'cancer', 'obesity', 'plasma', 'mAb','vaccine_status', 'surveillance_sample')
+wilcox.test(n_var ~ chronic_heart_disease, tmp)$p.value
+
+iqr = IQR(tmp$n_var)
+median_store = tmp %>% group_by_at(clinical_factors[1]) %>%
+  summarize(median = median(n_var)) %>% t %>% as.data.frame() %>%
+  add_rownames() #%>% filter(rowname == "median") %>% 
+  #summarize(fc = as.numeric(V2)-as.numeric(V1) / iqr)
+library(rcompanion)
+
+df = data.frame(); for (idx in 1:length(clinical_factors)) {
+  formula = formula(paste0("n_var ~ ", clinical_factors[idx]))
+  vda = 1-vda(formula, tmp)
+  pval = wilcox.test(formula, tmp)$p.value
+  median_store = tmp %>% group_by_at(clinical_factors[idx]) %>%
+    summarize(median = median(n_var)) %>% t %>% as.data.frame() %>%
+    add_rownames() %>% as.data.frame()
+  name = paste0(median_store$rowname[1], "_", median_store$V2[1])
+  name_median = median_store[2,3][[1]] %>% as.numeric()
+  ref_median = median_store[2,2][[1]] %>% as.numeric()
+  name_n = 
+  tmp_df = data.frame(name, name_median, ref_median, vda, pval, row.names = clinical_factors[idx])
+
+  if (idx == 0) {
+    df = tmp_df
+  } else {
+    df = rbind(df, tmp_df)
+  }
+}
+df = df %>% arrange(pval)
+
+alpha = 0.1
+sig_plot = df %>% filter(pval < alpha) %>% 
+  ggplot(aes(vda,-log10(pval), label = name)) + geom_point() + 
+  geom_vline(xintercept = 0.5, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = -log10(alpha), linetype = "dashed", color = "red") + 
+  theme_pubr() + xlim(0.4, 0.6) + ylim(0,30) + 
+  geom_text_repel(ylim = c(-log10(alpha),Inf), angle = 90)
+
+total_vda_plot =  sig_plot + 
+  geom_point(aes(vda,-log10(pval)), df %>% filter(pval > alpha), color = "grey")
+total_vda_plot
+
+```
+
+
+
+
+
+# PLOTTING COMMANDS PER CT
 
 ```{r}
 patient_counts_30 = patient_counts_30 %>% mutate(admitted_hospital = as.factor(admitted_hospital))
@@ -84,6 +140,50 @@ plot_admitted = patient_counts_30 %>% group_by(admitted_hospital) %>%
 
 #ggsave("ggsave/plot_admitted_marginal_by_ct.pdf", plot_admitted_marginal_by_ct, height = 5, width = 6)
 ```
+
+```{r}
+# VACCINATION GROUPS WITH CONTROL OVER THE TIME & OUTPATIENT STATUS
+table(patient_counts_30 %>% filter(collection_date>="2021-07-01") %>% select(admitted_hospital,vaccine_status))
+
+plot_vaccinated = patient_counts_30 %>%
+  filter(collection_date>="2021-07-01") %>% filter(admitted_hospital == 1) %>% 
+  group_by(vaccine_status) %>% 
+  ggplot(aes(x = INSTRUMENT_RESULT, y = n_var, color = vaccine_status)) + 
+  geom_point(shape = "") +
+        geom_density_2d(aes(color = vaccine_status)) + stat_cor(method = "spearman", cor.coef.name = "rho") +
+    geom_smooth(se=TRUE) + theme_pubr() + scale_y_continuous(trans="log1p", 
+                                                             breaks = c(0,1,2,5,10,15,20,25,30))
+((
+  plot_vaccinated_marginal_by_ct = ggMarginal(plot_vaccinated, type = "violin", 
+                                            draw_quantiles = c(0,0.25,0.5, 0.75),
+             groupColour = TRUE, groupFill = TRUE)
+))
+```
+
+# Healthcare workers
+```{r}
+# VACCINATION GROUPS WITH CONTROL OVER THE TIME & OUTPATIENT STATUS
+table(patient_counts_30 %>%  select(admitted_hospital,surveillance_sample))
+
+plot_hcw= patient_counts_30 %>% filter(admitted_hospital == 0) %>% 
+  group_by(surveillance_sample) %>% 
+  ggplot(aes(x = INSTRUMENT_RESULT, y = n_var, color = surveillance_sample)) + 
+  geom_point(shape = "") +
+        geom_density_2d(aes(color = surveillance_sample)) + 
+  stat_cor(method = "spearman", cor.coef.name = "rho") +
+    geom_smooth(se=TRUE) + theme_pubr() + scale_y_continuous(trans="log1p", 
+                                                             breaks = c(0,1,2,5,10,15,20,25,30))
+((
+  plot_hcw_marginal_by_ct = ggMarginal(plot_hcw, type = "violin", 
+                                            draw_quantiles = c(0,0.25,0.5, 0.75),
+             groupColour = TRUE, groupFill = TRUE)
+))
+```
+
+
+
+
+
 
 ##### NEED TO USE PATIENT COUNTS 30
 Univariate table, need to change this to 

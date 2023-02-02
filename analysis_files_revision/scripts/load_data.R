@@ -107,7 +107,7 @@ patient_data <- fread("sample_and_patient_data.csv",data.table=F) %>%
   mutate(MCoVNumber=str_remove(mcov_id, "-")) %>% mutate(collection_date=as.Date(COLLECTION_DT, "%m/%d/%y")) %>% 
   mutate(collection_month=format(as.Date(collection_date), "%Y-%m")) %>%
   mutate(CT=ifelse(INSTRUMENT_RESULT<50, INSTRUMENT_RESULT, NA_integer_)) %>% 
-  mutate(vaccine_status=if_else(Vaccine_Status=="No vaccine"|Vaccine_Status==">7 days past 1st Vaccine",0,1)) %>%
+  mutate(vaccine_status=if_else(Vaccine_Status=="No vaccine",0,1)) %>%
   mutate(age18under=if_else(Age_Group=="00-17",1,0)) %>% 
   mutate(age18to54=if_else(Age_Group=="18-54",1,0)) %>% 
   mutate(age55plus=if_else(Age_Group=="55-64"|Age_Group=="65+",1,0)) %>%
