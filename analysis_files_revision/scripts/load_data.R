@@ -116,15 +116,16 @@ patient_data <- fread("sample_and_patient_data.csv",data.table=F) %>%
          age55plus, sex=SEX, ethnicity=Ethnicity, obesity=Obesity_YN, 
          chronic_lung_disease=Chronic_Lung_Disease_YN, 
          chronic_liver_disease=Chronic_Liver_Disease_YN, 
-         surveillance_sample=IS_SURVEILLANCE, chronic_heart_disease=Chronic_Heart_Disease_YN,
+         hcw=IS_SURVEILLANCE, chronic_heart_disease=Chronic_Heart_Disease_YN,
          chronic_kidney_disease=Chronic_Kidney_Disease_YN, 
          hypertension=Hypertension_YN, diabetes=Diabetes_YN, 
          cancer=Cancer_YN, hiv=HIV_YN, transplant_patient=Transplant_Patient, 
          vaccine_status, admitted_hospital=Admitted_YN, highest_level=HIGHEST_LEVEL_OF_CARE, 
-         max_respiratory_support=MaxRespiratorySupport, mAb=mAb_YN, plasma=Plasma_YN)
+         max_respiratory_support=MaxRespiratorySupport, mAb=mAb_YN, plasma=Plasma_YN) %>%
+  mutate(surveillance = if_else(hcw == "Yes Surveillance",1,0))
 
 factor_columns <- c("collection_month","run","ordering_clinic", "pui", "age18under", 
-                    "age18to54", "age55plus","sex","ethnicity","obesity","surveillance_sample", 
+                    "age18to54", "age55plus","sex","ethnicity","obesity","surveillance", 
                     "chronic_lung_disease","chronic_liver_disease","chronic_heart_disease",
                     "chronic_kidney_disease","hypertension","diabetes","cancer","hiv",
                     "transplant_patient","vaccine_status","admitted_hospital",
@@ -142,7 +143,10 @@ patient_data[factor_columns]<-lapply(patient_data[factor_columns], factor)
 patient_var_tmp = fread("processing/var_aa_ct.txt", data.table = F) %>% 
   left_join(patient_data) %>% mutate(high_counts = n_var > 50) %>% 
  select(-pui) %>% left_join(sample_type) %>% 
-  left_join(sample_duration %>% select(-COLLECTION_DT))
+  left_join(sample_duration %>% select(-COLLECTION_DT)) %>%
+  mutate(vocAlpha=if_else(str_starts(scorpio_call, "Alpha"),1,0), 
+         vocDelta=if_else(str_starts(scorpio_call, "Delta"),1,0)) %>% 
+  mutate(vocAlpha=as.factor(vocAlpha), vocDelta=as.factor(vocDelta))
 
 #### ACTUAL PATIENT ANALYSIS FOR 02 RMD.
 patient_var = patient_var_tmp %>% filter(INSTRUMENT_RESULT < 26)# & 
