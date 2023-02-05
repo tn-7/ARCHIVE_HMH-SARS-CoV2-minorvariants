@@ -215,7 +215,8 @@ unique_all_enrichment_plot = unique_all %>% mutate(gene = fct_relevel(gene, leve
 combined_all_unique_enrichment = ggarrange(all_enrichment_plot, unique_all_enrichment_plot, common.legend = T)
 combined_all_unique_enrichment
 
-ggsave("ggsave/differential_genes_vaccine.pdf", combined_all_unique_enrichment, height = 4.5, width = 7)
+ggsave("ggsave/differential_genes_vaccine.pdf", combined_all_unique_enrichment, 
+       height = 4.5, width = 7)
 ```
 
 
