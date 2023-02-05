@@ -89,7 +89,8 @@ out %>% ggplot(aes(y = prop, x = gene, fill = enriched)) +
 
 unique_gene_counts = patient_var_30 %>% unite(col = "spectra_mutation", 
                                             major, ntpos, minor, remove = FALSE) %>% 
-  select(gene, major, minor, spectra_mutation) %>% unique() %>% group_by(gene) %>% 
+  select(gene, major, minor, spectra_mutation) %>% unique() %>% 
+  group_by(gene) %>% 
   summarize(g_var = n()) %>% filter(gene != "") %>%
   pivot_wider(names_from = "gene", values_from = g_var, values_fill = 0)
 
@@ -108,6 +109,126 @@ unique_all_enrichment_plot
 #ggsave("ggsave/unique_all_enrichment_plot.pdf", unique_all_enrichment_plot, height = 4, width = 3.5)
 
 ```
+
+
+```{r}
+gene_enrichment_for_plot = function(filtered_patient_var, 
+                                    unique = FALSE, label) {
+  unique_gene_counts_admitted_tmp = filtered_patient_var %>% 
+  unite(col = "spectra_mutation", major, ntpos, minor, remove = FALSE) %>% 
+  select(gene, major, minor, spectra_mutation)
+  
+  if (unique == TRUE) {
+    unique_gene_counts_admitted_tmp = unique_gene_counts_admitted_tmp %>% unique()
+  }
+  
+  unique_gene_counts_admitted = unique_gene_counts_admitted_tmp %>% group_by(gene) %>% 
+  summarize(g_var = n()) %>% filter(gene != "") %>%
+  pivot_wider(names_from = "gene", values_from = g_var, values_fill = 0)
+  
+  unique_out_admitted = enrichment(unique_gene_counts_admitted, genes) %>% 
+    mutate(mutation = label)
+  
+  return(unique_out_admitted)
+}
+
+# ALL COUNTS
+out_admitted = gene_enrichment_for_plot(patient_var_30 %>% 
+                                                 filter(admitted_hospital == 1), 
+                                               unique = FALSE, label = "admitted")
+out_outpatient = gene_enrichment_for_plot(patient_var_30 %>% 
+                                                   filter(admitted_hospital == 0),
+                                                 unique = FALSE, label = "outpatient")
+all = rbind(out_admitted, out_outpatient)
+
+all_enrichment_plot = all %>% ggplot(aes(y = prop, x = gene, color = mutation)) + 
+  geom_errorbar(aes(x = gene, ymin = log2(conf.low/prop), 
+                    ymax = log2(conf.high/prop)), 
+                position=position_dodge(width=0.3)) + scale_y_continuous(limits=c(-2, 2.5)) +
+  theme_minimal() + ggtitle("All counts") + theme(legend.position = "top") + coord_flip() + geom_hline(yintercept = 0, linetype = "dashed") +
+  ylab("log2FC (observed / expected_counts)")
+
+# UNIQUE COUNTS
+unique_out_admitted = gene_enrichment_for_plot(patient_var_30 %>% 
+                                                 filter(admitted_hospital == 1), 
+                                               unique = TRUE, label = "admitted")
+unique_out_outpatient = gene_enrichment_for_plot(patient_var_30 %>% 
+                                                   filter(admitted_hospital == 0),
+                                                 unique = TRUE, label = "outpatient")
+unique_all = rbind(unique_out_admitted, unique_out_outpatient)
+
+unique_all_enrichment_plot = unique_all %>% mutate(gene = fct_relevel(gene, levels(all$gene))) %>%
+  ggplot(aes(y = prop, x = gene, color = mutation)) + 
+  geom_errorbar(aes(x = gene, ymin = log2(conf.low/prop), 
+                    ymax = log2(conf.high/prop)), 
+                position=position_dodge(width=0.3)) + scale_y_continuous(limits=c(-1, 1.7)) +
+  theme_minimal() + ggtitle("Unique counts") + theme(legend.position = "top") + coord_flip() + geom_hline(yintercept = 0, linetype = "dashed") +
+  ylab("log2FC (observed / expected_counts)")
+
+combined_all_unique_enrichment = ggarrange(all_enrichment_plot, unique_all_enrichment_plot, common.legend = T)
+combined_all_unique_enrichment
+
+ggsave("ggsave/differential_genes_admitted_hospital.pdf", combined_all_unique_enrichment, height = 4.5, width = 7)
+```
+
+# Do the same thing above but for the vaccinated
+
+
+
+```{r}
+# ALL COUNTS
+out_admitted = gene_enrichment_for_plot(patient_var_30  %>% 
+                                          filter(collection_date>="2021-07-01") %>%
+                                                 filter(vaccine_status == 1), 
+                                               unique = FALSE, label = "vaccinated")
+out_outpatient = gene_enrichment_for_plot(patient_var_30 %>% filter(collection_date>="2021-07-01") %>%
+                                                   filter(vaccine_status == 0),
+                                                 unique = FALSE, label = "unvacinated")
+all = rbind(out_admitted, out_outpatient)
+
+all_enrichment_plot = all %>% ggplot(aes(y = prop, x = gene, color = mutation)) + 
+  geom_errorbar(aes(x = gene, ymin = log2(conf.low/prop), 
+                    ymax = log2(conf.high/prop)), 
+                position=position_dodge(width=0.3)) + #scale_y_continuous(limits=c(-2, 2.5)) +
+  theme_minimal() + ggtitle(paste0("After July 2021: All counts")) + theme(legend.position = "top") + coord_flip() + geom_hline(yintercept = 0, linetype = "dashed") +
+  ylab("log2FC (observed / expected_counts)")
+
+# UNIQUE COUNTS
+unique_out_admitted = gene_enrichment_for_plot(patient_var_30 %>% 
+                                                 filter(collection_date>="2021-07-01") %>%
+                                                 filter(vaccine_status == 1), 
+                                               unique = TRUE, label = "vaccinated")
+unique_out_outpatient = gene_enrichment_for_plot(patient_var_30 %>% 
+                                                   filter(collection_date>="2021-07-01") %>%
+                                                   filter(vaccine_status == 0),
+                                                 unique = TRUE, label = "unvacinated")
+unique_all = rbind(unique_out_admitted, unique_out_outpatient)
+
+unique_all_enrichment_plot = unique_all %>% mutate(gene = fct_relevel(gene, levels(all$gene))) %>%
+  ggplot(aes(y = prop, x = gene, color = mutation)) + 
+  geom_errorbar(aes(x = gene, ymin = log2(conf.low/prop), 
+                    ymax = log2(conf.high/prop)), 
+                position=position_dodge(width=0.3)) + #scale_y_continuous(limits=c(-1, 1.7)) +
+  theme_minimal() + ggtitle("Unique counts") + theme(legend.position = "top") + coord_flip() + geom_hline(yintercept = 0, linetype = "dashed") +
+  ylab("log2FC (observed / expected_counts)")
+
+combined_all_unique_enrichment = ggarrange(all_enrichment_plot, unique_all_enrichment_plot, common.legend = T)
+combined_all_unique_enrichment
+
+ggsave("ggsave/differential_genes_vaccine.pdf", combined_all_unique_enrichment, height = 4.5, width = 7)
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ```{r}

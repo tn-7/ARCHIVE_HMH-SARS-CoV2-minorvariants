@@ -41,12 +41,21 @@ normalize <- function(x, na.rm = TRUE) {
     return((x- min(x)) /(max(x)-min(x)))
 }
 
+```
+
+
+
+
+# LASSO scan the features
+Looks like it's important to remove the HIV and transplant because of sparsity of data.
+
+```{r}
 scan_factors = c('Duration','age18under','age55plus','sex','chronic_lung_disease',
                  'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 
                  'transplant_patient', 'hiv', 'hypertension', 'diabetes', 'cancer', 'obesity', 
                  'plasma', 'mAb', 'admitted_hospital','vaccine_status',
                  'vocAlpha','vocDelta','collection_month',
-                 'surveillance','CT','median_coverage','run')
+                 'surveillance','CT','median_coverage','run', 'PUI')
 
 scale_scan_factors = function(patient_var_tmp, scan_factors) {
   p_sub = patient_var_tmp %>% 
@@ -59,7 +68,56 @@ scale_scan_factors = function(patient_var_tmp, scan_factors) {
   return(p_sub_scaled)
 }
 
+scan_factors_trim = scan_factors[!scan_factors %in% c("transplant_patient", "hiv")] 
+p_sub_scaled = scale_scan_factors(
+  patient_var_tmp %>% filter(n_var < 30 & CT < 26), 
+  scan_factors_trim)
+y<-log2(p_sub_scaled$n_var+1)
+x<-(p_sub_scaled[, colnames(p_sub_scaled) %in% scan_factors_trim]) %>% data.matrix()
+
+p_sub_over = scale_scan_factors(
+  patient_var_tmp %>% filter(n_var > 30 & CT > 26), 
+                                scan_factors_trim) 
+y_over<-log2(p_sub_over$n_var+1)
+x_over<-data.matrix(p_sub_over[, colnames(p_sub_over) %in% scan_factors_trim])
+
+
+lasso_under_30 = lasso_xy(x,y) %>% mutate(cutoff = "n_var_under_30")
+lasso_over_30 = lasso_xy(x_over, y_over) %>% mutate(cutoff = "n_var_over_30")
+
+lasso_bio_vs_artifact = rbind(lasso_under_30, lasso_over_30)
+
+
+lasso_xy_plot = lasso_bio_vs_artifact %>% spread(., cutoff, coefficient) %>% 
+ggplot(aes(x = n_var_over_30, y = n_var_under_30, label = factor)) +geom_point() +
+  geom_hline(yintercept = 0) + geom_vline(xintercept = 0) +
+  geom_label_repel(max.overlaps = Inf, alpha = 0.3,
+    segment.size      = 0.5,
+    segment.curvature = -0.1
+  )  + ylim(c(-0.25,0.25)) +
+  theme_minimal() + ylab("LASSO coef. on log2(n_var+1), Ct<26 & n_var<30\nhypothesized biological data") + 
+  xlab("LASSO coef. on log2(n_var+1), Ct>26 & n_var>30\nhypothesized nonbiological data")
+lasso_xy_plot
+#ggsave("ggsave/lasso_xy_plot.pdf", lasso_xy_plot, height = 5, width = 5)
+
 ```
+```{r}
+library(pheatmap)
+admitted_matrix = cbind(x,#[x[,"admitted_hospital"] == 1,], 
+                        n_var = normalize(y))
+library(viridis)
+clinical_cor_heatmap = pheatmap(abs(cor(admitted_matrix, method = "spearman")),
+                                color = viridis(10), border_color	= NA)
+
+ggsave("ggsave/clinical_cor_heatmap.pdf", clinical_cor_heatmap, height = 6, width = 6)
+
+
+# pheatmap(abs(cor(admitted_matrix[,!colnames(admitted_matrix) 
+#                                  %in% "admitted_hospital"], method = "pearson")), 
+#          color = viridis(10))
+```
+
+
 
 # Demonstrate which features have enough n to be scanned
 ```{r, fig.width = 8, fig.height = 4}
@@ -73,26 +131,29 @@ plot_feature_n = function(p_sub_scaled) {
     select_if(is.factor) %>% select_if(check_levels) %>%
     mutate_if(is.factor, numeric1) %>% colSums() %>% 
     data.frame(feature = names(.), IP = .)
+    sum_n_IP = feature_stats_IP["admitted_hospital","IP"]
+
   
   feature_stats_OP = p_sub_scaled %>% select(one_of(scan_factors)) %>% 
     filter(admitted_hospital == 0) %>%
     select_if(is.factor) %>% select_if(check_levels) %>%
     mutate_if(is.factor, numeric1) %>% colSums() %>% 
     data.frame(feature = names(.), OP = .)
+  sum_n_OP = sum_n - sum_n_IP
   
   feature_stats = left_join(feature_stats_IP, feature_stats_OP)
   
   feature_n_plot = feature_stats %>% ggplot(aes(x=IP, y = OP, label = feature)) + 
     geom_abline(slope =1, color = "red", linetype = "dashed") + 
     geom_point() + geom_text_repel() +
-    scale_y_continuous(breaks = seq(0,1500,100), limits = c(0,1300),
-                       sec.axis = sec_axis(~ . / sum_n, labels = scales::label_percent(),
-                                           breaks = seq(0,1,0.05))) + 
-    scale_x_continuous(breaks = seq(0,2000,100), guide = guide_axis(angle = 90),
-                       sec.axis = sec_axis(~ . / sum_n, labels = scales::label_percent(),
-                                           breaks = seq(0,1,0.05))) + theme_pubr() +
-    xlab(paste0("Inpatient (n & % of ", sum_n, ")")) +
-    ylab(paste0("Outpatient (n & % of ", sum_n, ")"))
+    scale_y_continuous( breaks = seq(0,1500,100), limits = c(0,1400),
+                       sec.axis = sec_axis(~ . / sum_n_OP, labels = scales::label_percent(),
+                                           breaks = seq(0,1,0.1))) + 
+    scale_x_continuous( breaks = seq(0,2000,100), guide = guide_axis(angle = 90),
+                       sec.axis = sec_axis(~ . / sum_n_IP, labels = scales::label_percent(),
+                                           breaks = seq(0,1,0.1))) + theme_pubr() +
+    xlab(paste0("Inpatient (n & % of ", sum_n_IP, ")")) +
+    ylab(paste0("Outpatient (n & % of ", sum_n_OP, ")"))
   return(feature_n_plot)
 }
 
@@ -103,51 +164,18 @@ feature_n_plot = ggarrange(undated_feature_n_plot + ggtitle("12/2020 - 11/2021")
           julyonwards_feature_n_plot + ggtitle("07/2021 - 11/2021"), align = "h",
           labels = list("A","B"))
 feature_n_plot
-ggsave("ggsave/feature_n_plot.pdf", feature_n_plot, width = 14, height = 8)
+ggsave("ggsave/feature_n_plot.pdf", feature_n_plot, width = 16, height = 8)
 ```
 
 
-# LASSO scan the features
-```{r}
-p_sub_scaled = scale_scan_factors(
-  patient_var_tmp %>% filter(n_var < 30 & CT < 26), 
-  scan_factors)
-y<-log2(p_sub_scaled$n_var+1)
-x<-data.matrix(p_sub_scaled[, colnames(p_sub_scaled) %in% scan_factors])
-
-p_sub_over = scale_scan_factors(
-  patient_var_tmp %>% filter(n_var > 30 & CT > 26), 
-                                scan_factors)
-y_over<-log2(p_sub_over$n_var+1)
-x_over<-data.matrix(p_sub_over[, colnames(p_sub_over) %in% scan_factors])
-
-
-lasso_under_30 = lasso_xy(x,y) %>% mutate(cutoff = "n_var_under_30")
-lasso_over_30 = lasso_xy(x_over, y_over) %>% mutate(cutoff = "n_var_over_30")
-
-lasso_bio_vs_artifact = rbind(lasso_under_30, lasso_over_30)
-
-lasso_xy_plot = lasso_bio_vs_artifact %>% spread(., cutoff, coefficient) %>% 
-ggplot(aes(x = n_var_over_30, y = n_var_under_30, label = factor)) + geom_point() +
-  geom_hline(yintercept = 0) + geom_vline(xintercept = 0) +
-  geom_label_repel(max.overlaps = Inf, alpha = 0.3,
-    segment.size      = 0.5,
-    segment.curvature = -0.1
-  )  + ylim(-0.6,0.6) +
-  theme_minimal() + ylab("LASSO coef. on log2(n_var+1), Ct<26 & n_var<30\nhypothesized biological data") + 
-  xlab("LASSO coef. on log2(n_var+1), Ct>26 & n_var>30\nhypothesized nonbiological data")
-lasso_xy_plot
-#ggsave("ggsave/lasso_xy_plot.pdf", lasso_xy_plot, height = 5, width = 5)
-
-```
 
 # Screening boxplots and using Wilcoxon Rank Sum test
 
 ```{r}
-tmp = patient_counts_30 %>% filter(collection_date>="2021-07-01") %>% 
-  filter(admitted_hospital == 1)
+tmp = patient_counts_30 %>% filter(collection_date>="2021-07-01") #%>% 
+  #filter(admitted_hospital == 0)
 
-clinical_factors = c('sex','chronic_lung_disease', 'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 'transplant_patient', 'hiv', 'hypertension', 'diabetes', 'cancer', 'obesity', 'plasma', 'mAb','vaccine_status', 'surveillance_sample')
+clinical_factors = c('sex','chronic_lung_disease', 'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 'transplant_patient', 'hiv', 'hypertension', 'diabetes', 'cancer', 'obesity', 'plasma', 'mAb','vaccine_status', 'surveillance', 'admitted_hospital')
 wilcox.test(n_var ~ chronic_heart_disease, tmp)$p.value
 
 iqr = IQR(tmp$n_var)
@@ -158,17 +186,24 @@ median_store = tmp %>% group_by_at(clinical_factors[1]) %>%
 library(rcompanion)
 
 df = data.frame(); for (idx in 1:length(clinical_factors)) {
+  flag = TRUE
   formula = formula(paste0("n_var ~ ", clinical_factors[idx]))
-  vda = 1-vda(formula, tmp)
-  pval = wilcox.test(formula, tmp)$p.value
+  
+  vda = tryCatch(1-vda(formula, tmp), error = function(e) flag <<- FALSE) 
+  pval = tryCatch(
+    (wilcox.test(formula, tmp)$p.value),
+    error = function(e) flag <<- FALSE
+  ); if (!flag) next
   median_store = tmp %>% group_by_at(clinical_factors[idx]) %>%
-    summarize(median = median(n_var)) %>% t %>% as.data.frame() %>%
+    summarize(n = n(), median = median(n_var)) %>% t %>% as.data.frame() %>%
     add_rownames() %>% as.data.frame()
   name = paste0(median_store$rowname[1], "_", median_store$V2[1])
-  name_median = median_store[2,3][[1]] %>% as.numeric()
-  ref_median = median_store[2,2][[1]] %>% as.numeric()
-  name_n = 
-  tmp_df = data.frame(name, name_median, ref_median, vda, pval, row.names = clinical_factors[idx])
+  name_n = median_store[2,3][[1]] %>% as.numeric()
+  ref_n = median_store[2,2][[1]] %>% as.numeric()
+  name_median = median_store[3,3][[1]] %>% as.numeric()
+  ref_median = median_store[3,2][[1]] %>% as.numeric()
+  tmp_df = data.frame(name, name_n, ref_n, name_median, ref_median, 
+                      vda, pval, row.names = clinical_factors[idx])
 
   if (idx == 0) {
     df = tmp_df
@@ -180,45 +215,144 @@ df = df %>% arrange(pval)
 
 alpha = 0.1
 sig_plot = df %>% filter(pval < alpha) %>% 
-  ggplot(aes(vda,-log10(pval), label = name)) + geom_point() + 
+  ggplot(aes(vda,-log10(pval), label = name, size = name_n)) + geom_point() + 
   geom_vline(xintercept = 0.5, linetype = "dashed", color = "red") +
   geom_hline(yintercept = -log10(alpha), linetype = "dashed", color = "red") + 
-  theme_pubr() + xlim(0.4, 0.6) + ylim(0,30) + 
-  geom_text_repel(ylim = c(-log10(alpha),Inf), angle = 90)
+  theme_pubr() + #xlim(0.4, 0.6)  + 
+  geom_text_repel(ylim = c(-Inf,Inf), angle = 0,
+                  segment.size  = 0.5,
+    segment.curvature = -0.2)
 
 total_vda_plot =  sig_plot + 
   geom_point(aes(vda,-log10(pval)), df %>% filter(pval > alpha), color = "grey")
 total_vda_plot
-
+df
 ```
 
+```{r}
+tmp = patient_counts_30 %>% filter(collection_date>="2021-07-01") #%>% 
+  #filter(admitted_hospital == 0)
+clinical_factors = c('sex','chronic_lung_disease', 'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 'transplant_patient', 'hiv', 'hypertension', 'diabetes', 'cancer', 'obesity', 'plasma', 'mAb','vaccine_status', 'surveillance', 'admitted_hospital')
+
+wilcox_test = function(tmp, clinical_factors) {
+  library(rcompanion)
+  df = data.frame(); for (idx in 1:length(clinical_factors)) {
+    flag = TRUE
+    formula = formula(paste0("n_var ~ ", clinical_factors[idx]))
+    
+    vda = tryCatch(1-vda(formula, tmp), error = function(e) flag <<- FALSE) 
+    pval = tryCatch(
+      (wilcox.test(formula, tmp)$p.value),
+      error = function(e) flag <<- FALSE
+    ); if (!flag) next
+    median_store = tmp %>% group_by_at(clinical_factors[idx]) %>%
+      summarize(n = n(), median = median(n_var)) %>% t %>% as.data.frame() %>%
+      add_rownames() %>% as.data.frame()
+    name = paste0(median_store$rowname[1], "_", median_store$V2[1])
+    name_n = median_store[2,3][[1]] %>% as.numeric()
+    ref_n = median_store[2,2][[1]] %>% as.numeric()
+    name_median = median_store[3,3][[1]] %>% as.numeric()
+    ref_median = median_store[3,2][[1]] %>% as.numeric()
+    tmp_df = data.frame(name, name_n, ref_n, name_median, ref_median, 
+                        vda, pval, row.names = clinical_factors[idx])
+    if (idx == 0) {
+      df = tmp_df
+    } else {
+      df = rbind(df, tmp_df)
+    }
+    }
+    df = df %>% arrange(pval)
+  return(df)
+}
+
+df_admitted = wilcox_test(tmp %>% 
+          filter(admitted_hospital == 1 & chronic_heart_disease == 0 &
+                   chronic_lung_disease == 0 & diabetes == 0 & hypertension == 0 &
+                   chronic_kidney_disease == 0 & obesity == 0 & cancer == 0), clinical_factors)
+df_outpatient = wilcox_test(tmp %>% filter(admitted_hospital == 0), clinical_factors)
+
+alpha = 0.1
+sig_plot = df %>% filter(pval < alpha) %>% 
+  ggplot(aes(vda,-log10(pval), label = name, size = name_n)) + geom_point() + 
+  geom_vline(xintercept = 0.5, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = -log10(alpha), linetype = "dashed", color = "red") + 
+  theme_pubr() + #xlim(0.4, 0.6)  + 
+  geom_text_repel(ylim = c(-Inf,Inf), angle = 0,
+                  segment.size  = 0.5,
+    segment.curvature = -0.2)
+
+total_vda_plot =  sig_plot + 
+  geom_point(aes(vda,-log10(pval)), df %>% filter(pval > alpha), color = "grey")
+total_vda_plot
+df
+```
 
 
 
 
 # PLOTTING COMMANDS PER CT
 
+EXPLORATION OF THE ADMITTED
+
 ```{r}
-patient_counts_30 = patient_counts_30 %>% mutate(admitted_hospital = as.factor(admitted_hospital))
+patient_counts_30 = patient_counts_30 %>% #filter(collection_date >="2021-07-01") %>%
+  mutate(admitted_hospital = as.factor(admitted_hospital))
 
 plot_admitted = patient_counts_30 %>% group_by(admitted_hospital) %>% 
   ggplot(aes(x = INSTRUMENT_RESULT, y = n_var, color = admitted_hospital)) + 
   geom_point(shape = "") +
-        geom_density_2d(aes(color = admitted_hospital)) + stat_cor(method = "spearman", cor.coef.name = "rho") +
+        geom_density_2d(aes(color = admitted_hospital)) + 
+  stat_cor(method = "spearman", cor.coef.name = "rho") +
     geom_smooth(se=TRUE) + theme_pubr() + scale_y_continuous(trans="log1p", 
-                                                             breaks = c(0,1,2,5,10,15,20,25,30))
-((
+                                                             breaks = c(0,1,2,5,10,15,20,25,30)) +
+  scale_x_continuous(limits = c(10,26))
   plot_admitted_marginal_by_ct = ggMarginal(plot_admitted, type = "violin", 
                                             draw_quantiles = c(0,0.25,0.5, 0.75),
              groupColour = TRUE, groupFill = TRUE)
-))
 
-#ggsave("ggsave/plot_admitted_marginal_by_ct.pdf", plot_admitted_marginal_by_ct, height = 5, width = 6)
+
+# By Date now:
+plot_admitted_date = patient_counts_30 %>% group_by(admitted_hospital) %>% 
+  ggplot(aes(x = collection_date, y = n_var, color = admitted_hospital)) + 
+  geom_point(shape = "") +
+        geom_density_2d(aes(color = admitted_hospital)) + 
+  stat_cor(method = "spearman", cor.coef.name = "rho") +
+    geom_smooth(se=TRUE) + theme_pubr() + scale_y_continuous(trans="log1p", 
+                                                             breaks = c(0,1,2,5,10,15,20,25,30))
+plot_admitted_date_marginal = ggMarginal(plot_admitted_date,  groupColour = TRUE, groupFill = TRUE)
+
+plot_admitted_marginal_combined = ggarrange(plot_admitted_marginal_by_ct, 
+                                            plot_admitted_date_marginal, align = "h")
+plot_admitted_marginal_combined
+ggsave("ggsave/plot_admitted_marginal_combined.pdf", 
+       plot_admitted_marginal_combined, height = 4.5, width = 9)
 ```
+
+Admitted by Date
+```{r}
+
+
+```
+
+
+
+
+
+
+
+OTHER FACTORS
+
 
 ```{r}
 # VACCINATION GROUPS WITH CONTROL OVER THE TIME & OUTPATIENT STATUS
-patient_counts_30 %>% select(collection_month, vaccine_status) %>% filter(vaccine_status == 1) %>% ggplot(aes(x = collection_month)) + geom_histogram(stat="count")
+patient_counts_30 %>% select(collection_month, vaccine_status, admitted_hospital) %>% 
+  filter(vaccine_status == 1) %>% ggplot(aes(x = collection_month)) + 
+  geom_histogram(stat="count") 
+
+patient_counts_30 %>% select(collection_month, vaccine_status, admitted_hospital) %>%
+  filter(admitted_hospital == 1) %>% ggplot(aes(x = collection_month)) + 
+  geom_histogram(stat="count")
+
 
 
 table(patient_counts_30 %>% filter(collection_date>="2021-07-01") %>% select(admitted_hospital,vaccine_status))
@@ -231,13 +365,45 @@ plot_vaccinated = patient_counts_30 %>%
         geom_density_2d(aes(color = vaccine_status)) + stat_cor(method = "spearman", cor.coef.name = "rho") +
     geom_smooth(se=TRUE) + theme_pubr() + scale_y_continuous(trans="log1p", 
                                                              breaks = c(0,1,2,5,10,15,20,25,30)) +
-  ggtitle
-((
-  plot_vaccinated_marginal_by_ct = ggMarginal(plot_vaccinated, type = "violin", 
+    scale_x_continuous(limits = c(10,26))
+
+    plot_vaccinated_marginal_by_ct = ggMarginal(plot_vaccinated, type = "boxplot", 
                                             draw_quantiles = c(0,0.25,0.5, 0.75),
              groupColour = TRUE, groupFill = TRUE)
-))
+    
+plot_vaccinated_marginal_by_ct
+
+ggsave("ggsave/plot_vaccinated_marginal_by_ct.pdf", plot_vaccinated_marginal_by_ct, height = 5, width = 5)
 ```
+
+```{r}
+# VACCINATION GROUPS WITH CONTROL OVER THE TIME & OUTPATIENT STATUS
+patient_counts_30 %>% select(collection_month, vaccine_status) %>% filter(vaccine_status == 1) %>% ggplot(aes(x = collection_month)) + geom_histogram(stat="count")
+
+
+table(patient_counts_30 %>% #filter(collection_date>="2021-07-01") %>% 
+        select(admitted_hospital,mAb))
+
+plot_vaccinated = patient_counts_30 %>%
+  filter(collection_date>="2021-07-01") %>% 
+  filter(admitted_hospital == 1) %>% 
+  group_by(mAb) %>% 
+  ggplot(aes(x = INSTRUMENT_RESULT, y = n_var, color = mAb)) + 
+  geom_point(shape = "") +
+        geom_density_2d(aes(color = mAb)) + stat_cor(method = "spearman", cor.coef.name = "rho") +
+    geom_smooth(se=TRUE) + theme_pubr() + scale_y_continuous(trans="log1p", 
+                                                             breaks = c(0,1,2,5,10,15,20,25,30)) +
+    scale_x_continuous(limits = c(10,26))
+
+    plot_vaccinated_marginal_by_ct = ggMarginal(plot_vaccinated, type = "boxplot", 
+                                            draw_quantiles = c(0,0.25,0.5, 0.75),
+             groupColour = TRUE, groupFill = TRUE)
+    
+plot_vaccinated_marginal_by_ct
+
+#ggsave("ggsave/plot_mAb_marginal_by_ct.pdf", plot_vaccinated_marginal_by_ct, height = 5, width = 5)
+```
+
 
 # Healthcare workers
 ```{r}
@@ -249,25 +415,6 @@ plot_hcw= patient_counts_30 %>% filter(admitted_hospital == 0) %>% filter(collec
   ggplot(aes(x = INSTRUMENT_RESULT, y = n_var, color = vaccine_status)) + 
   geom_point(shape = "") +
         geom_density_2d(aes(color = vaccine_status)) + 
-  stat_cor(method = "spearman", cor.coef.name = "rho") +
-    geom_smooth(se=TRUE) + theme_pubr() + scale_y_continuous(trans="log1p", 
-                                                             breaks = c(0,1,2,5,10,15,20,25,30))
-((
-  plot_hcw_marginal_by_ct = ggMarginal(plot_hcw, type = "violin", 
-                                            draw_quantiles = c(0,0.25,0.5, 0.75),
-             groupColour = TRUE, groupFill = TRUE)
-))
-```
-
-```{r}
-# HIV GROUPS WITH CONTROL OVER THE TIME & OUTPATIENT STATUS
-table(patient_counts_30 %>%  select(admitted_hospital,transplant_patient))
-
-plot_hcw= patient_counts_30 %>% filter(admitted_hospital == 0) %>% filter(collection_date>="2021-07-01") %>%
-  group_by(transplant_patient) %>% 
-  ggplot(aes(x = INSTRUMENT_RESULT, y = n_var, color = transplant_patient)) + 
-  geom_point(shape = "") +
-        geom_density_2d(aes(color = transplant_patient)) + 
   stat_cor(method = "spearman", cor.coef.name = "rho") +
     geom_smooth(se=TRUE) + theme_pubr() + scale_y_continuous(trans="log1p", 
                                                              breaks = c(0,1,2,5,10,15,20,25,30))
