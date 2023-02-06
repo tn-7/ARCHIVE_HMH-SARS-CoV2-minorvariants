@@ -1,0 +1,41 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+source("./scripts/startup.R")
+source("./scripts/load_data.R")
+```
+
+```{r}
+#install.packages('tableone', 'officer' )
+library(tableone)
+
+var_factors = c('Duration', 'CT', 'COLLECTION_DT', 'n_var')
+cat_factors = c('age18under','age55plus','sex','chronic_lung_disease',
+                 'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 
+                 'transplant_patient', 'hiv', 'hypertension', 'diabetes', 'cancer', 'obesity', 
+                 'plasma', 'mAb', 'admitted_hospital','vaccine_status', 'vocDelta', 'vocAlpha','test',
+                 'surveillance','median_coverage','PUI')
+factors = c(var_factors, cat_factors)
+
+
+patient_counts_30$sex = droplevels(patient_counts_30$sex)
+table1 <- CreateTableOne(factors, patient_counts_30, strata = c("admitted_hospital"), addOverall = T) #%>% 
+                           #filter(collection_date >= "2021-07-01"), strata = c("admitted_hospital"))
+
+x = print(table1, nonnormal = c('n_var'), cramVars = "sex", quote = FALSE, noSpaces = T)
+write.csv(x, file = "ggsave/Table1_by_admitted_alldates.csv")
+
+```
+
+```{r}
+table1 <- CreateTableOne(factors, patient_counts_30 %>% filter(collection_date >= "2021-07-01"),
+    strata = c("admitted_hospital"), addOverall = T)
+
+x = print(table1, nonnormal = c('n_var'), cramVars = "sex", quote = FALSE, noSpaces = T)
+write.csv(x, file = "ggsave/Table1_by_admitted_JulyOnwards.csv")
+
+```
+

@@ -1,0 +1,98 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+source("./scripts/startup.R")
+source("./scripts/load_data.R")
+```
+
+```{r}
+normalize <- function(x, na.rm = TRUE) {
+  scaled = (x- min(x)) /(max(x)-min(x))
+    return()
+}
+
+
+scan_factors_trim = c('Duration','age18under','age55plus','sex','chronic_lung_disease',
+                 'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 
+                  'hypertension', 'diabetes', 'cancer', 'obesity', 
+                 'plasma', 'mAb', 'admitted_hospital','vaccine_status',
+                 'vocAlpha','vocDelta',
+                 'surveillance','CT','median_coverage','run', 'PUI')
+
+scale_scan_factors = function(patient_var_tmp, scan_factors) {
+  p_sub = patient_var_tmp %>% 
+  select(MCoVNumber,lineage,Duration,COLLECTION_DT:high_counts,one_of(scan_factors)) %>% 
+  unique
+
+  p_sub[, colnames(p_sub) %in% scan_factors] 
+  p_sub_scaled = p_sub %>% select(one_of(scan_factors)) %>% 
+    mutate_if(is.numeric, scale) %>% # scale will z scale it, instead of the normalize fx above which is min max
+    cbind(p_sub %>% select(!one_of(scan_factors)))
+  return(p_sub_scaled)
+}
+
+unitable = function(patient_counts_uni, include, 
+                    dv = "ordinal_counts", other_iv = NA) {
+    index = 0; for (i in include) {
+    flag = T
+    index = index + 1
+    if (!is.na(other_iv)){
+        formulas_tmp = formula(paste0(dv, " ~", i, "+", other_iv))
+    } else {
+        formulas_tmp = formula(paste0(dv, " ~", i))
+    }
+    
+     m <- tryCatch(mixed_model(formulas_tmp,
+                              random = ~ 1 | run,
+                              data = patient_counts_uni,
+     family = binomial, control = list(iter_EM = 0)),
+     error=function(e) flag<<-FALSE)
+    
+    if (!flag) next
+    coef_table = summary(m)$coef_table
+    # table of estimates with 95% CI
+    tab <- cbind(estimate = coef_table[,1], 
+                 se = coef_table[,2], pvalue = coef_table[,4]) %>%
+                 #UL = coef_table[,1] + 1.96 * coef_table[,2]) %>%
+      as.data.frame
+    out_odds_tmp = (tab) %>% 
+      mutate(pval = coef_table[,4]) %>% 
+      .[-1,] %>% rownames_to_column
+    if (index == 1) {
+      out_odds = out_odds_tmp
+    } else {
+      out_odds = rbind(out_odds, out_odds_tmp)
+    }
+  }
+  # out_odds = out_odds %>% arrange(pval) %>% 
+  #   mutate(rowname = str_remove(rowname, "1"))
+  # 
+  # # count number of "YES" occurrences per column
+  # YEScount = function(string) {
+  #   return(sum(str_count(string, pattern = "1")))
+  # }
+  # 
+  # counts = sapply(patient_counts_uni_tmp %>% 
+  #                   filter(!is.na(.data[[dv]])), YEScount)
+  # df_counts = data.frame(rowname = names(counts), counts)
+  out = out_odds#%>% left_join(df_counts, by = "rowname")
+  return(out)
+}
+
+p_sub_scaled = scale_scan_factors(
+  patient_var_tmp %>% filter(n_var < 30 & CT < 26 & collection_date >= "2021-07-01" & admitted_hospital == 1), 
+  scan_factors_trim) %>% mutate(ordinal_counts = cut(n_var, breaks = seq(0,30,5)))
+tmp = unitable(p_sub_scaled, include = scan_factors_trim, other_iv = "CT")
+tmp
+tmp %>% arrange(pval) %>% filter(!rowname %in% c("CT"))
+
+
+
+
+
+```
+
+
+

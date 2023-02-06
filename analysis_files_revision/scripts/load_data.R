@@ -159,7 +159,8 @@ patient_var = patient_var_tmp %>% filter(INSTRUMENT_RESULT < 26)# &
 patient_var_30 = patient_var %>% filter(n_var < 30)
 
 
-patient_counts = patient_var %>% select(MCoVNumber,lineage,Duration,COLLECTION_DT:high_counts, PUI) %>% unique
+patient_counts = patient_var %>% select(MCoVNumber,lineage,Duration,COLLECTION_DT:high_counts, 
+                                        vocAlpha, vocDelta,PUI) %>% unique
 patient_counts_30 = patient_counts %>% filter(n_var < 30)
 
 

@@ -106,22 +106,28 @@ runs_kept = mcov_samples_with_ct$run[!mcov_samples_with_ct$run %in% runs_to_drop
 ```
 
 ```{r}
-f1 = mcov_samples_with_ct %>% ggplot(aes(INSTRUMENT_RESULT, fraction_1000x_coverage)) + 
+f1 = mcov_samples_with_ct %>% mutate(run_kept = run %in% runs_kept) %>% 
+  ggplot(aes(INSTRUMENT_RESULT, fraction_1000x_coverage, 
+                                         color = run_kept)) + 
   geom_point(shape=".", alpha = 0.5) + theme_pubr() + 
   theme(plot.title = element_text(size = 40, face = "bold")) + 
-  geom_vline(xintercept=40, color = "red")
-f1 = ggMarginal(f1 + rremove("xlab"))
+  geom_vline(xintercept=40, color = "red") + geom_smooth()
+f1
 
-f2 = mcov_samples_with_ct %>% ggplot(aes(INSTRUMENT_RESULT, log10(median_coverage))) + 
+f2 = mcov_samples_with_ct %>% mutate(run_kept = run %in% runs_kept) %>% 
+  ggplot(aes(INSTRUMENT_RESULT, log10(median_coverage), color = run_kept)) + 
   geom_point(shape=".", alpha = 0.5) + theme_pubr() + 
   theme(plot.title = element_text(size = 40, face = "bold")) + 
-  geom_vline(xintercept=40, color = "red")
-f2 = ggMarginal(f2)
+  geom_vline(xintercept=40, color = "red") + geom_smooth()
 
-runs_samples_dots = ggarrange(f1, f2, ncol = 1, nrow = 2, align = "v")
+runs_samples_dots = ggarrange(f1, f2, ncol = 1, nrow = 2, align = "v", common.legend = T)
+runs_samples_dots
 #ggsave("ggsave/runs_samples_dots.pdf", plot = runs_samples_dots, width = 3, height = 4.5)
 
 
+```
+```{r}
+mcov_samples_with_ct %>% colnames()
 ```
 
 ``` {r}
@@ -143,31 +149,36 @@ runs_samples_dots = ggarrange(f1, f2, ncol = 1, nrow = 2, align = "v")
 ```{r}
 ### plot boxplot of the runs
 stmp = mcov_samples_with_ct %>% mutate(run_dropped = run %in%   
-    runs_to_drop) %>% mutate(run = gsub("Run_", "", run)) %>% 
+    runs_to_drop) %>% mutate(run = as.numeric(gsub("Run_", "", run))) %>% 
     mutate(is_neg=if_else(CT>=40,1,0))
 
-f3 = ggplot(stmp, aes(run, fraction_1000x_coverage, color = run_dropped, fill = run_dropped)) + 
+label_at <- function(n) function(x) ifelse(x %% n == 0, x, "")
+
+
+f3 = ggplot(stmp, aes(x=run, y=fraction_1000x_coverage, group = run, 
+             color = run_dropped, fill = run_dropped)) + 
   geom_boxplot() + 
   geom_point(data = stmp %>% filter(is_neg == T), 
              aes(run, fraction_1000x_coverage), color = "red", alpha = .9, 
              shape = 1) + 
   scale_fill_grey(start = 1, end = 0.8) + 
+  scale_x_continuous(breaks = seq(10,90,2), limits = c(10,92), labels = label_at(10)) +  
   scale_color_grey(start=0, end=0.6) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1), 
-        text = element_text(size=8)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   labs( x = NULL)
   
-f4 = ggplot(stmp, aes(run, log10(median_coverage), 
-                      color = run_dropped, fill = run_dropped)) + 
+f4 = ggplot(stmp, aes(x=run, y=log10(median_coverage), group = run, 
+             color = run_dropped, fill = run_dropped)) + 
   geom_boxplot() + 
   geom_point(data = stmp %>% filter(is_neg == T), 
              aes(run, log10(median_coverage)), color = "red", alpha = .9, 
              shape = 1) + 
   scale_fill_grey(start = 1, end = 0.8) + 
+  scale_x_continuous(breaks = seq(10,90,2), limits = c(10,92), labels = label_at(10)) +  
   scale_color_grey(start=0, end=0.6) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1), 
-        text = element_text(size=8))
-  
+  theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
+  labs( x = NULL)
+
 run_filter_red = ggarrange(f3, f4, ncol = 1, nrow = 2, align = "v", common.legend = T)
 ((
   run_filter_red_plot = annotate_figure(run_filter_red,
@@ -549,22 +560,56 @@ minor_sites_lowct<-minor_variant_sites_threshold %>% left_join(mcov_samples_filt
 # What kinds of run-specific effects do we see even after filtering for high-quality samples?
 
 ```{r}
-((n_var_by_run <- samples_n_var %>% mutate(run = str_remove(run, "Run_")) %>% filter(INSTRUMENT_RESULT < 26 & n_var < 30) %>% 
-    ggplot(aes(x=run, y=n_var)) + geom_boxplot() + theme_bw() + 
-    theme(axis.text.x = element_text(angle = 90)) + xlab("Run") + ylab("No. minor variants")))
-
-
-```
-
-```{r}
 #are run effects related to sequencing depth?
-n_var_by_coverage<-samples_n_var %>% filter(INSTRUMENT_RESULT<26 & n_var < 30) %>% ggplot(aes(x=median_coverage, y=n_var)) + geom_point(alpha=0.1) + 
-  geom_density_2d(color = "salmon") + geom_smooth(color = "red") + theme_bw() + xlab("Sample median coverage") + ylab("n_var")
+n_var_by_coverage<-samples_n_var %>% filter(INSTRUMENT_RESULT<26 & n_var < 30) %>% ggplot(aes(x=median_coverage, y=n_var)) + geom_point(alpha=0.05) + 
+  geom_density_2d(color = "salmon") + geom_smooth(color = "red") + theme_pubr() +
+  scale_x_continuous(limits = c(0, 15000)) +
+  xlab("Sample median coverage") + ylab("n_var") + stat_cor(method = "spearman", cor.coef.name = "rho")
+n_var_by_coverage
 #not on the individual sample level
 
 #is average minor variant richness in a run related to average depth of coverage in the run?
-n_var_depth_averages<-samples_n_var %>% filter(INSTRUMENT_RESULT<26 & n_var < 30) %>% group_by(run) %>% summarise(median_n_var=median(n_var), median_sample_coverage=median(median_coverage), median_ct=median(INSTRUMENT_RESULT)) %>% ggplot(aes(x=median_sample_coverage, y=median_n_var)) + geom_point() + theme_bw() + xlab("Run median of median coverage") + ylab("Run median n_var") + geom_smooth(method=lm, color = "red") 
+n_var_depth_averages<-samples_n_var %>% filter(INSTRUMENT_RESULT<26 & n_var < 30) %>% 
+  group_by(run) %>% 
+  summarise(median_n_var=median(n_var), 
+            median_sample_coverage=median(median_coverage), 
+            median_ct=median(INSTRUMENT_RESULT)) %>% 
+  ggplot(aes(x=median_sample_coverage, y=median_n_var)) + geom_point(alpha = 0.5) +
+  scale_x_continuous(limits = c(0, 15000)) +
+  theme_pubr() + xlab("Run median of median coverage") + ylab("Run median n_var") + 
+  geom_smooth(color = "red") + stat_cor(method = "spearman", cor.coef.name = "rho")
+n_var_depth_averages
 ```
+
+```{r, fig.height = 5, fig.width = 4}
+n_var_by_run <- samples_n_var %>% mutate(run = as.numeric(str_remove(run, "Run_"))) %>% 
+  filter(INSTRUMENT_RESULT < 26 & n_var < 30) %>% 
+    ggplot(aes(x=run, y=n_var, group = run)) + geom_boxplot() + 
+    scale_fill_grey(start = 1, end = 0.8) + 
+    scale_x_continuous(breaks = seq(10,90,2), limits = c(10,92), labels = label_at(10)) +
+    scale_y_continuous(breaks = seq(0,30,2), labels = label_at(10)) +
+
+    scale_color_grey(start=0, end=0.6) + 
+    theme(axis.text.x = element_text(angle = 90, vjust = .5))
+
+plots_by_run = ggarrange(f3, f4, n_var_by_run, labels = list("A","B","C"), 
+          ncol = 1, nrow = 3, align = "v", common.legend = T) %>% annotate_figure(.,
+               top = text_grob("red circles: samples Ct>40", color = "red", size = 10))
+
+dots_depth_median = ggarrange(n_var_by_coverage, n_var_depth_averages,  
+                              labels = list("E", "F"), ncol = 1)
+
+dots_plots = ggarrange(runs_samples_dots, dots_depth_median, labels = list("D"), 
+                       ncol = 1, heights = c(1,1))
+
+
+
+run_filtration = ggarrange(plots_by_run, dots_plots, ncol = 2, widths = c(2.5, 1))
+ggsave("ggsave/run_filtration.pdf", run_filtration, height = 8, width = 12)
+
+```
+
+
 
 ```{r}
 # samples_n_var %>% filter(INSTRUMENT_RESULT<26) %>% filter(run=="Run_90") %>% ggplot(aes(x=median_coverage, y=n_var)) + geom_point() + ggtitle("Run 90 - very high average coverage") + theme_bw() + geom_hline(yintercept=10, linetype="dotted")
