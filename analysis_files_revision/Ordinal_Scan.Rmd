@@ -90,6 +90,10 @@ scan_factors_trim = c('Duration','age18under','age55plus','sex','chronic_lung_di
                  'surveillance','CT','median_coverage', 'PUI')
 
 all_data = scale_and_run_binom(patient_counts_30, scan_factors_trim)
+afterJuly = scale_and_run_binom(patient_counts_30 %>% 
+                                   filter(collection_date >= "2021-07-01"), 
+                                   scan_factors_trim)
+
 afterJuly_IP = scale_and_run_binom(patient_counts_30 %>% 
                                    filter(admitted_hospital == 1 & 
                                             collection_date >= "2021-07-01"), 
@@ -107,7 +111,7 @@ beforeJuly_OP = scale_and_run_binom(patient_counts_30 %>%
                                             collection_date <= "2021-07-01"), 
                                    scan_factors_trim)
 
-dfnames = c("all_data", "afterJuly_IP", "beforeJuly_IP", "afterJuly_OP", "beforeJuly_OP")
+dfnames = c("all_data", "afterJuly", "afterJuly_IP", "beforeJuly_IP", "afterJuly_OP", "beforeJuly_OP")
 all_df_binom_nb = do.call(rbind, lapply(dfnames, function(x) cbind(get(x), Source=x)))
 saveRDS(all_df_binom_nb, "ggsave/temp_all_df_binom_nb.txt")
 ```
