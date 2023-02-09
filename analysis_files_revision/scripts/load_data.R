@@ -141,7 +141,7 @@ sample_duration =  fread("timestamp_sample_RNA_extraction_processing.csv",
 
 patient_data[factor_columns]<-lapply(patient_data[factor_columns], factor)
 patient_var_tmp = fread("processing/var_aa_ct.txt", data.table = F) %>% 
-  left_join(patient_data) %>% mutate(high_counts = n_var > 50) %>% 
+  left_join(patient_data) %>% mutate(high_counts = n_var > 14) %>% 
  select(-pui) %>% left_join(sample_type) %>% 
   left_join(sample_duration %>% select(-COLLECTION_DT)) %>%
   mutate(vocAlpha=if_else(str_starts(scorpio_call, "Alpha"),1,0), 

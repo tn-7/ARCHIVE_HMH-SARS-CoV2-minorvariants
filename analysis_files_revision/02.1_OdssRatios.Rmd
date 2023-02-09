@@ -1111,7 +1111,7 @@ plot_grid(hosp_fig, vax_fig, surv_fig, ncol=3, labels=c("a","b","c"), align="hv"
 
 ```{r}
 #LASSO regression model including all sample and patient characteristics to explain minor variant richness
-p_sub<- p %>% left_join(mcov_samples_filtered) #to add info about coverage
+p_sub<- patient_counts_30 #to add info about coverage
 y<-log10(p_sub$n_var+1)
 x<-data.matrix(p_sub[, c('age18under','age55plus','sex','chronic_lung_disease', 'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 'hypertension', 'diabetes', 'cancer', 'obesity', 'plasma', 'mAb', 'admitted_hospital','vaccine_status','vocAlpha','vocDelta','collection_month','surveillance_sample','CT','median_coverage','run')])
 

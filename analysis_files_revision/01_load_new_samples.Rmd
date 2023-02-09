@@ -343,19 +343,40 @@ n_var_select_ct_filtered = samples_n_var %>%
   filter(INSTRUMENT_RESULT<26 & n_var < 30) %>% 
   ggplot(aes(x=INSTRUMENT_RESULT, y=n_var)) + 
   geom_point(shape = 1, alpha = 1/16) + 
-  geom_density_2d(color = "darkblue") + 
+  geom_density_2d(color = "salmon") + 
   scale_y_continuous(breaks = seq(0,30,5)) +
   scale_x_continuous(breaks = seq(0,40,by = 5)) +
   theme_pubr() + xlab("Ct value") + ylab("n_var") +
   geom_smooth(color = "red") + stat_cor(method = "spearman", cor.coef.name = "rho")
 ))
 
-ct_n_var_postfilter_plot = ggMarginal(n_var_select_ct_filtered, 
+
+
+
+
+patient_ordinal_counts = samples_n_var %>% 
+  filter(INSTRUMENT_RESULT<26 & n_var < 30) %>% 
+  mutate(ordinal_counts = cut(n_var, breaks = seq(0,30,5), 
+                              right = F)) %>% 
+  select(n_var, ordinal_counts) %>% arrange(n_var) %>% 
+  group_by(ordinal_counts) %>% summarize(counts = n()) %>% 
+  mutate(position = seq(2.5,27.5,5))
+
+n_var_select_ct_filtered_labeled = n_var_select_ct_filtered +
+  geom_text(aes(x=25, y = position, label = counts), color = "darkblue", 
+                                     data = patient_ordinal_counts) +
+  theme_minimal_hgrid()
+
+ct_n_var_postfilter_plot = ggMarginal(n_var_select_ct_filtered_labeled, 
                                       type = "violin", 
                                       draw_quantiles = c(0.25,0.5,0.75))
 ct_n_var_postfilter_plot
 
-#ggsave("ggsave/ct_n_var_postfilter_plot.pdf", ct_n_var_postfilter_plot, height = 5, width = 5)
+
+
+
+ggsave("ggsave/ct_n_var_postfilter_plot.pdf", 
+       ct_n_var_postfilter_plot, height = 3, width = 3)
 
 
 # patient_data<-fread("sample_and_patient_data.csv",data.table=F)  %>% mutate(MCoVNumber=str_remove(mcov_id, "-")) %>% select(-COLLECTION_DT) %>% inner_join(samples_n_var)
@@ -531,16 +552,18 @@ lineages_figure <- mcov_samples_filtered %>%
         !(startsWith(scorpio_call,"Delta")|
             startsWith(scorpio_call,"Alpha")) ~ "other lineages")) %>%
   mutate(variant=if_else(lineage == "B.1.2","B.1.2",variant)) %>%
-  ggplot(aes(x=COLLECTION_DT)) + geom_bar(aes(fill=variant)) + theme_bw() + 
+  ggplot(aes(x=COLLECTION_DT)) + geom_bar(aes(fill=variant))  + 
 #  scale_fill_manual(values=c("#00A08A", "#F2AD00", "#F98400", "#5BBCD6")) + 
   xlab("Collection date") + ylab("No. samples") + 
   ggtitle(paste0('Final sample set, \n Ct<26 & n_var<30, n = ',length(samples_to_analyze))) + 
-  scale_x_date(minor_breaks="1 month") + theme_pubr()
+  scale_x_date(minor_breaks="1 month") + theme_pubr() +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5))
+
 
 #SUPP FIG 2
 lineages_figure
 
-#ggsave("ggsave/lineages_figure.pdf", plot = lineages_figure, height = 5, width = 5 )
+ggsave("ggsave/lineages_figure.pdf", plot = lineages_figure, height = 3, width = 3 )
 ```
 
 ```{r}
@@ -592,19 +615,20 @@ n_var_by_run <- samples_n_var %>% mutate(run = as.numeric(str_remove(run, "Run_"
     scale_color_grey(start=0, end=0.6) + 
     theme(axis.text.x = element_text(angle = 90, vjust = .5))
 
-plots_by_run = ggarrange(f3, f4, n_var_by_run, labels = list("A","B","C"), 
+plots_by_run = ggarrange(f3, f4, n_var_by_run, labels = list("A","B","D"), 
           ncol = 1, nrow = 3, align = "v", common.legend = T) %>% annotate_figure(.,
                top = text_grob("red circles: samples Ct>40", color = "red", size = 10))
 
 dots_depth_median = ggarrange(n_var_by_coverage, n_var_depth_averages,  
                               labels = list("E", "F"), ncol = 1)
 
-dots_plots = ggarrange(runs_samples_dots, dots_depth_median, labels = list("D"), 
+dots_plots = ggarrange(runs_samples_dots, dots_depth_median, labels = list("C"), 
                        ncol = 1, heights = c(1,1))
 
 
 
 run_filtration = ggarrange(plots_by_run, dots_plots, ncol = 2, widths = c(2.5, 1))
+run_filtration
 ggsave("ggsave/run_filtration.pdf", run_filtration, height = 8, width = 12)
 
 ```
