@@ -377,6 +377,8 @@ minors_table<- fread("replicated_samples.csv", data.table=F) %>%
 minors_table<-minors_table %>% 
   mutate(minorfreq.reseq=if_else(minor.original==minor.reseq, minorfreq.reseq, 0)) %>% 
   mutate(detected_minor_in_repl=if_else(minor.original==minor.reseq,"yes","no"))
+
+write_feather(minors_table, "processing/minors_table.arrow")
 ```
 
 ```{r}
