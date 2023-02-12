@@ -70,14 +70,22 @@ run_parallel_binom = function(tmp_counts, scan_factors_trim) {
 
 scale_and_run_binom = function(patient_counts_30, scan_factors_trim) {
   tmp_counts = scale_scan_factors(patient_counts_30, scan_factors_trim) %>% 
-  mutate(high_counts_threshold = quantile(.$n_var, probs = .8)[[1]], 
+  mutate(high_counts_threshold = 10, #quantile(.$n_var, probs = .8)[[1]], 
          high_counts = n_var > high_counts_threshold)
   model_coef = run_parallel_binom(tmp_counts, scan_factors_trim)
   
-  model_coef %>% 
-  return(model_coef)
+  # count the occurrences
+  n_model = tmp_counts %>% select(any_of(scan_factors_trim)) %>% 
+    select_if(~class(.) == 'factor') %>%
+      gather(name, value) %>%  # reshape dataset
+      count(name, value) %>%     # count combinations
+      group_by(name) %>% 
+      summarize(factor_count = n[2], factor_prop = factor_count / sum(n))
+  
+  model_coef_n = model_coef %>% left_join(n_model)
+  
+  return(model_coef_n)
 }
-
 ```
 
 Run functions for negative binomial and binomial regression
@@ -92,6 +100,9 @@ scan_factors_trim = c('Duration','age18under','age55plus','sex','chronic_lung_di
 all_data = scale_and_run_binom(patient_counts_30, scan_factors_trim)
 afterJuly = scale_and_run_binom(patient_counts_30 %>% 
                                    filter(collection_date >= "2021-07-01"), 
+                                   scan_factors_trim)
+beforeJuly = scale_and_run_binom(patient_counts_30 %>% 
+                                   filter(collection_date <= "2021-07-01"), 
                                    scan_factors_trim)
 
 afterJuly_IP = scale_and_run_binom(patient_counts_30 %>% 
@@ -111,164 +122,269 @@ beforeJuly_OP = scale_and_run_binom(patient_counts_30 %>%
                                             collection_date <= "2021-07-01"), 
                                    scan_factors_trim)
 
-dfnames = c("all_data", "afterJuly", "afterJuly_IP", "beforeJuly_IP", "afterJuly_OP", "beforeJuly_OP")
+dfnames = c("all_data", "afterJuly", "beforeJuly", "afterJuly_IP", 
+            "beforeJuly_IP", "afterJuly_OP", "beforeJuly_OP")
 all_df_binom_nb = do.call(rbind, lapply(dfnames, function(x) cbind(get(x), Source=x)))
-saveRDS(all_df_binom_nb, "ggsave/temp_all_df_binom_nb.txt")
+saveRDS(all_df_binom_nb, "ggsave/temp_all_df_binom_nb.rds")
 ```
 
+
+# Plot the forest plots
+```{r}
+library(ggforestplot)
+library(scales)
+
+all_df_binom_nb = readRDS("ggsave/temp_all_df_binom_nb.rds")
+# order the y axis
+
+df_input = all_df_binom_nb %>% filter(Source == "all_data")
+forest_tn = function(df_input, model_count = 2) {
+  df_input = df_input %>% filter(factor_prop > 0.05 & factor_prop < 0.95)
+  order = df_input %>% group_by(name) %>% summarize(mean_estimate = mean(Estimate)) %>% 
+  arrange(mean_estimate) %>% pull(name)
+  
+  df_input$name = factor(df_input$name, levels = order)
+  both_pass = df_input %>% group_by(name) %>% 
+  summarize(both_pass = (sum(pval < 0.05) > (model_count - 1))) %>% arrange(name, order) %>%
+  mutate(both_pass = ifelse(both_pass, "black", "grey")) %>%
+  pull(both_pass)
+
+  forest_binom = df_input  %>%
+    mutate(name = factor(name, levels = order)) %>%
+    ggplot(aes(x = (Estimate), y = name)) + 
+    geom_effect(aes(xmin = (LL), xmax = (UL), 
+                    color = model_type, filled = pval < 0.05)) + 
+    #scale_color_manual(values = c("black", "salmon")) +
+    theme_forest() + theme(legend.position = "top", 
+                           axis.text.x = element_text(angle = 90, 
+                                                      vjust = 0.5, hjust=1),
+                           axis.text.y = element_text(color = both_pass)) + 
+    geom_stripes() + #annotation_logticks(sides = "tbl") +
+    geom_vline(xintercept = 0, linetype = "dashed") + 
+    scale_x_continuous(sec.axis = sec_axis(~ exp(.), breaks = c(seq(0.4,3,0.2)))) + #,
+                       #labels=label_number(0.01)) + #geom_vline(xintercept = 1) +
+    xlab("exp(Coefficient)")
+  return(forest_binom)
+}
+
+forest_tn(all_df_binom_nb %>% filter(Source == "afterJuly_IP"))
+forest_tn(all_df_binom_nb %>% filter(Source == "beforeJuly_IP"))
+forest_tn(all_df_binom_nb %>% filter(Source == "afterJuly_OP"))
+forest_tn(all_df_binom_nb %>% filter(Source == "beforeJuly_OP"))
+forest_tn(all_df_binom_nb %>% filter(Source == "afterJuly"))
+forest_tn(all_df_binom_nb %>% filter(Source == "beforeJuly"))
+
+
+
+
+
+forest_tn(df_input)
+
+all_df_binom_nb %>% filter(Source == "afterJuly_IP")
+
+
+
+
+tmp 
+# patient_counts_30 %>% filter(collection_date >= "2021-07-01") %>% 
+#   summarize(quant = quantile(.$n_var, probs = 0.8))
+
+
+
+
+```
+
+```{r}
+# No count restriction 
+initial_scan_nocount = scale_and_run_binom(patient_counts %>% 
+                               filter(n_var > 30), 
+                               scan_factors_trim)
+forest_tn(initial_scan_nocount %>% filter(model_type == "nbinom2"), model_count = 1)
+
+# forest_nocount = forestplot(initial_scan_nocount, 
+#                                 rowname, estimate, se, 
+#                            pvalue, group) + 
+#   scale_color_manual(values = rev(c("lightblue", "salmon", "black"))) +
+#   scale_y_discrete(limits=rev) + 
+#   theme(axis.text.x = element_text(angle = 90, 
+#                                    vjust = 0.5, hjust=1)) + 
+#   theme(legend.position = "top", legend.direction = "vertical",
+#         legend.justification = "left")
+
+# 500x98%
+initial_scan_500x98 = scale_and_run_binom(patient_counts_30 %>% filter(fraction_1000x_coverage > .98),
+                                          scan_factors_trim)
+
+forest_tn(initial_scan_500x98 %>% filter(model_type == "binomial"), model_count = 1)
+
+
+# CT < 18
+initial_scan_ct18 = scale_and_run_binom(patient_counts_30 %>% filter(INSTRUMENT_RESULT < 18),
+                                        scan_factors_trim)
+forest_tn(initial_scan_ct18 %>% filter(model_type == "binomial"), model_count = 1)
+
+# No co-morbidity
+initial_scan_no_comorbid = scale_and_run_binom(patient_counts_30 %>% 
+      filter(chronic_heart_disease == 0, diabetes == 0, chronic_lung_disease == 0,
+             chronic_liver_disease == 0, chronic_kidney_disease == 0, cancer == 0,
+             hypertension == 0, hiv == 0, transplant_patient == 0, surveillance == 0), scan_factors_trim)
+
+forest_tn(initial_scan_no_comorbid %>% filter(model_type == "binomial"), model_count = 1)
+
+```
 
 
 
 
 ```{r}
 # Define functions
-
-normalize <- function(x, na.rm = TRUE) {
-  scaled = (x- min(x)) /(max(x)-min(x))
-    return(scaled)
-}
-
-
-
-scan_factors_trim = c('Duration','age18under','age55plus','sex','chronic_lung_disease',
-                 'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 
-                  'hypertension', 'diabetes', 'cancer', 'obesity', 
-                 'plasma', 'mAb', 'admitted_hospital','vaccine_status',
-                 'vocAlpha','vocDelta',
-                 'surveillance','CT','median_coverage','run', 'PUI')
-
-unitable = function(patient_counts_uni, include, 
-                    dv = "ordinal_counts", other_iv = NA) {
-    index = 0; for (i in include) {
-    flag = T
-    index = index + 1
-    if (!is.na(other_iv)){
-        formulas_tmp = formula(paste0(dv, " ~", i, "+", other_iv))
-    } else {
-        formulas_tmp = formula(paste0(dv, " ~", i))
-    }
-    
-     m <- tryCatch(mixed_model(formulas_tmp,
-                              random = ~ 1 | run,
-                              data = patient_counts_uni,
-     family = binomial, control = list(iter_EM = 0)),
-     error=function(e) flag<<-FALSE)
-    
-    if (!flag) next
-    coef_table = summary(m)$coef_table
-    # table of estimates with 95% CI
-    tab <- cbind(estimate = coef_table[,1], 
-                 se = coef_table[,2], pvalue = coef_table[,4]) %>%
-                 #UL = coef_table[,1] + 1.96 * coef_table[,2]) %>%
-      as.data.frame
-    out_odds_tmp = (tab) %>% 
-      mutate(pval = coef_table[,4]) %>% 
-      .[-1,] %>% rownames_to_column
-    if (index == 1) {
-      out_odds = out_odds_tmp
-    } else {
-      out_odds = rbind(out_odds, out_odds_tmp)
-    }
-  }
-  # out_odds = out_odds %>% arrange(pval) %>% 
-  #   mutate(rowname = str_remove(rowname, "1"))
-  # 
-  # # count number of "YES" occurrences per column
-  # YEScount = function(string) {
-  #   return(sum(str_count(string, pattern = "1")))
-  # }
-  # 
-  # counts = sapply(patient_counts_uni_tmp %>% 
-  #                   filter(!is.na(.data[[dv]])), YEScount)
-  # df_counts = data.frame(rowname = names(counts), counts)
-  out = out_odds#%>% left_join(df_counts, by = "rowname")
-  return(out)
-}
-
-```
-
-# INITIAL SCAN
-```{r}
-library(ggforestplot)
-
-actual_ordinal_scan = function(patient_counts_30) {
-  p_sub_scaled = scale_scan_factors(
-  patient_counts_30, 
-  scan_factors_trim) %>% 
-    mutate(ordinal_counts = cut(n_var, breaks = seq(0,30,5), right = F))
-  all_dates = unitable(other_iv = "CT", p_sub_scaled, 
-                       include = scan_factors_trim) %>% arrange(pval)
-  before_july = unitable(other_iv = "CT", p_sub_scaled %>% 
-                           filter(collection_date <= "2021-07-01"), 
-                       include = scan_factors_trim) %>% arrange(pval)
-  after_july = unitable(other_iv = "CT", p_sub_scaled %>% 
-                           filter(collection_date >= "2021-07-01"), 
-                       include = scan_factors_trim) %>% arrange(pval)
-  
-  initial_scan = rbind(all_dates %>% mutate(group = "all_dates"),
-                       before_july %>% mutate(group = "before_July"),
-                       after_july %>% mutate(group = "after_July"))
-  
-  
-  order = initial_scan %>% filter(group == "all_dates") %>% 
-    arrange(-estimate) %>% pull(rowname)
-  initial_scan = initial_scan %>% arrange(estimate) %>%
-    mutate(group = factor(group, 
-                          levels = rev(c("before_July", "after_July",
-                                            "all_dates")))) %>%
-    filter(rowname != "CT")#,
-           #rowname = factor(rowname, levels = rev(order)))
-  return(initial_scan)
-}
-
-initial_scan = actual_ordinal_scan(patient_counts_30)
-
-
-forest_simple = forestplot(initial_scan, rowname, estimate, se, 
-                           pvalue, group) + 
-  scale_color_manual(values = rev(c("lightblue", "salmon", "black"))) +
-  scale_y_discrete(limits=rev) + 
-  theme(axis.text.x = element_text(angle = 90, 
-                                   vjust = 0.5, hjust=1)) + 
-  theme(legend.position = "top", legend.direction = "vertical",
-        legend.justification = "left")
-
-forest_simple 
-ggsave("ggsave/forest_simple.pdf", forest_simple, width = 4, height = 6)
+# 
+# normalize <- function(x, na.rm = TRUE) {
+#   scaled = (x- min(x)) /(max(x)-min(x))
+#     return(scaled)
+# }
+# 
+# 
+# 
+# scan_factors_trim = c('Duration','age18under','age55plus','sex','chronic_lung_disease',
+#                  'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 
+#                   'hypertension', 'diabetes', 'cancer', 'obesity', 
+#                  'plasma', 'mAb', 'admitted_hospital','vaccine_status',
+#                  'vocAlpha','vocDelta',
+#                  'surveillance','CT','median_coverage','run', 'PUI')
+# 
+# unitable = function(patient_counts_uni, include, 
+#                     dv = "ordinal_counts", other_iv = NA) {
+#     index = 0; for (i in include) {
+#     flag = T
+#     index = index + 1
+#     if (!is.na(other_iv)){
+#         formulas_tmp = formula(paste0(dv, " ~", i, "+", other_iv))
+#     } else {
+#         formulas_tmp = formula(paste0(dv, " ~", i))
+#     }
+#     
+#      m <- tryCatch(mixed_model(formulas_tmp,
+#                               random = ~ 1 | run,
+#                               data = patient_counts_uni,
+#      family = binomial, control = list(iter_EM = 0)),
+#      error=function(e) flag<<-FALSE)
+#     
+#     if (!flag) next
+#     coef_table = summary(m)$coef_table
+#     # table of estimates with 95% CI
+#     tab <- cbind(estimate = coef_table[,1], 
+#                  se = coef_table[,2], pvalue = coef_table[,4]) %>%
+#                  #UL = coef_table[,1] + 1.96 * coef_table[,2]) %>%
+#       as.data.frame
+#     out_odds_tmp = (tab) %>% 
+#       mutate(pval = coef_table[,4]) %>% 
+#       .[-1,] %>% rownames_to_column
+#     if (index == 1) {
+#       out_odds = out_odds_tmp
+#     } else {
+#       out_odds = rbind(out_odds, out_odds_tmp)
+#     }
+#   }
+#   # out_odds = out_odds %>% arrange(pval) %>% 
+#   #   mutate(rowname = str_remove(rowname, "1"))
+#   # 
+#   # # count number of "YES" occurrences per column
+#   # YEScount = function(string) {
+#   #   return(sum(str_count(string, pattern = "1")))
+#   # }
+#   # 
+#   # counts = sapply(patient_counts_uni_tmp %>% 
+#   #                   filter(!is.na(.data[[dv]])), YEScount)
+#   # df_counts = data.frame(rowname = names(counts), counts)
+#   out = out_odds#%>% left_join(df_counts, by = "rowname")
+#   return(out)
+# }
+# 
+# ```
+# 
+# # INITIAL SCAN
+# ```{r}
+# library(ggforestplot)
+# 
+# actual_ordinal_scan = function(patient_counts_30) {
+#   p_sub_scaled = scale_scan_factors(
+#   patient_counts_30, 
+#   scan_factors_trim) %>% 
+#     mutate(ordinal_counts = cut(n_var, breaks = seq(0,30,5), right = F))
+#   all_dates = unitable(other_iv = "CT", p_sub_scaled, 
+#                        include = scan_factors_trim) %>% arrange(pval)
+#   before_july = unitable(other_iv = "CT", p_sub_scaled %>% 
+#                            filter(collection_date <= "2021-07-01"), 
+#                        include = scan_factors_trim) %>% arrange(pval)
+#   after_july = unitable(other_iv = "CT", p_sub_scaled %>% 
+#                            filter(collection_date >= "2021-07-01"), 
+#                        include = scan_factors_trim) %>% arrange(pval)
+#   
+#   initial_scan = rbind(all_dates %>% mutate(group = "all_dates"),
+#                        before_july %>% mutate(group = "before_July"),
+#                        after_july %>% mutate(group = "after_July"))
+#   
+#   
+#   order = initial_scan %>% filter(group == "all_dates") %>% 
+#     arrange(-estimate) %>% pull(rowname)
+#   initial_scan = initial_scan %>% arrange(estimate) %>%
+#     mutate(group = factor(group, 
+#                           levels = rev(c("before_July", "after_July",
+#                                             "all_dates")))) %>%
+#     filter(rowname != "CT")#,
+#            #rowname = factor(rowname, levels = rev(order)))
+#   return(initial_scan)
+# }
+# 
+# initial_scan = actual_ordinal_scan(patient_counts_30)
+# 
+# 
+# forest_simple = forestplot(initial_scan, rowname, estimate, se, 
+#                            pvalue, group) + 
+#   scale_color_manual(values = rev(c("lightblue", "salmon", "black"))) +
+#   scale_y_discrete(limits=rev) + 
+#   theme(axis.text.x = element_text(angle = 90, 
+#                                    vjust = 0.5, hjust=1)) + 
+#   theme(legend.position = "top", legend.direction = "vertical",
+#         legend.justification = "left")
+# 
+# forest_simple 
+# ggsave("ggsave/forest_simple.pdf", forest_simple, width = 4, height = 6)
 ```
 
 #### INPATIENT VS OUTPATIENT BY DATE
 ```{r}
-initial_scan_ip = actual_ordinal_scan(patient_counts_30 %>% filter(admitted_hospital == 1))
-
-forest_ip = forestplot(initial_scan_ip, rowname, estimate, se, 
-                           pvalue, group) + 
-  scale_color_manual(values = rev(c("lightblue", "salmon", "black"))) +
-  scale_y_discrete(limits=rev) + 
-  theme(axis.text.x = element_text(angle = 90, 
-                                   vjust = 0.5, hjust=1)) + 
-  theme(legend.position = "top", legend.direction = "vertical",
-        legend.justification = "left")
-
-forest_ip
-
-
-initial_scan_op = actual_ordinal_scan(patient_counts_30 %>% filter(admitted_hospital == 0))
-
-forest_op = forestplot(initial_scan_op, rowname, estimate, se, 
-                           pvalue, group) + 
-  scale_color_manual(values = rev(c("lightblue", "salmon", "black"))) +
-  scale_y_discrete(limits=rev) + 
-  theme(axis.text.x = element_text(angle = 90, 
-                                   vjust = 0.5, hjust=1)) + 
-  theme(legend.position = "top", legend.direction = "vertical",
-        legend.justification = "left")
-
-forest_ip_op = ggarrange(forest_ip + ggtitle("Inpatient"), forest_op + ggtitle("Outpatient"), labels = list("A","B"),
-                         common.legend = T)
-forest_ip_op
-
-ggsave("ggsave/forest_ip_op.pdf", forest_ip_op, width = 8, height = 6)
+# initial_scan_ip = actual_ordinal_scan(patient_counts_30 %>% filter(admitted_hospital == 1))
+# 
+# forest_ip = forestplot(initial_scan_ip, rowname, estimate, se, 
+#                            pvalue, group) + 
+#   scale_color_manual(values = rev(c("lightblue", "salmon", "black"))) +
+#   scale_y_discrete(limits=rev) + 
+#   theme(axis.text.x = element_text(angle = 90, 
+#                                    vjust = 0.5, hjust=1)) + 
+#   theme(legend.position = "top", legend.direction = "vertical",
+#         legend.justification = "left")
+# 
+# forest_ip
+# 
+# 
+# initial_scan_op = actual_ordinal_scan(patient_counts_30 %>% filter(admitted_hospital == 0))
+# 
+# forest_op = forestplot(initial_scan_op, rowname, estimate, se, 
+#                            pvalue, group) + 
+#   scale_color_manual(values = rev(c("lightblue", "salmon", "black"))) +
+#   scale_y_discrete(limits=rev) + 
+#   theme(axis.text.x = element_text(angle = 90, 
+#                                    vjust = 0.5, hjust=1)) + 
+#   theme(legend.position = "top", legend.direction = "vertical",
+#         legend.justification = "left")
+# 
+# forest_ip_op = ggarrange(forest_ip + ggtitle("Inpatient"), forest_op + ggtitle("Outpatient"), labels = list("A","B"),
+#                          common.legend = T)
+# forest_ip_op
+# 
+# ggsave("ggsave/forest_ip_op.pdf", forest_ip_op, width = 8, height = 6)
 ```
 
 #### ALTERNATIVE DATASETS

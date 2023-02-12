@@ -11,11 +11,11 @@ output:
 
 ## Sample characteristics and inclusion criteria 
 
-```{r}
 
-##### Load libraries and define recurring functions / variables
+```{r}
 source("./scripts/startup.R")
 
+##### Load libraries and define recurring functions / variables
 #all mcov samples we have ever received - reformat sample names to be consistent
 mcov_samples_all <- fread("full_lineage_report_20220507.tsv", data.table=F) %>% 
   mutate(MCoVNumber=mcov_reformat(taxon)) %>% 
@@ -65,10 +65,6 @@ coverage_ct_cat<-mcov_samples_with_ct %>% mutate(sample_ct=if_else(CT>=40, "CT>=
   geom_point(alpha=0.2, position=position_jitter(width=0.25)) + 
   geom_boxplot(color="red", alpha=0) + theme_bw() + 
   xlab("Ct value") + ylab("Sample median depth")
-#see that CT>=40 samples tend to have extremely low coverage, but some outliers
-#SUPP FIG 12
-#coverage_pre_filtering<-plot_grid(coverage_all, coverage_ct_cat)
-#coverage_pre_filtering
 ```
 
 
@@ -88,6 +84,7 @@ runs_to_drop2 = test_group %>% group_by(run) %>%
 
 ############ 
 runs_to_drop<-union(runs_to_drop1, runs_to_drop2)
+saveRDS(runs_to_drop, "processing/runs_to_drop.rds")
 
 mcov_samples_with_ct %>% pull(run) %>% unique()
 test_group %>% group_by(run, sampletype) %>% summarize(counts = n()) %>% 
@@ -99,10 +96,7 @@ test_group %>% group_by(run, sampletype) %>% summarize(counts = n()) %>%
   ggplot(aes(dropped,counts, label=run)) + geom_boxplot() + geom_point() + geom_text_repel() + theme_pubr()
 
 runs_kept = mcov_samples_with_ct$run[!mcov_samples_with_ct$run %in% runs_to_drop] %>% unique()
-# for (i in runs_kept) {
-#   f = mcov_samples_with_ct %>% filter(run == i) %>% ggplot(aes(INSTRUMENT_RESULT, fraction_1000x_coverage)) + geom_point() + ggtitle(i) + theme(plot.title = element_text(size = 40, face = "bold"))
-#   print(f)
-# }
+
 ```
 
 ```{r}
@@ -122,29 +116,14 @@ f2 = mcov_samples_with_ct %>% mutate(run_kept = run %in% runs_kept) %>%
 
 runs_samples_dots = ggarrange(f1, f2, ncol = 1, nrow = 2, align = "v", common.legend = T)
 runs_samples_dots
-#ggsave("ggsave/runs_samples_dots.pdf", plot = runs_samples_dots, width = 3, height = 4.5)
-
-
+ggsave("ggsave/runs_samples_dots.pdf", plot = runs_samples_dots, width = 3, height = 4.5)
 ```
+
+
 ```{r}
 mcov_samples_with_ct %>% colnames()
 ```
 
-``` {r}
-# tmp = data.table(mcov_samples_with_ct %>% filter(CT>35))[ , invisible(cor.test(fraction_1000x_coverage, -CT, method="spearman")[-2]), by=run] %>% select(run, p.value, estimate) %>%
-#   mutate; tmp
-# tmp = tmp %>% mutate(abnormal = run %in%   
-#        c("Run_20","Run_89","Run_21","Run_58","Run_76","Run_71","Run_75",
-#        "Run_86","Run_74","Run_70","Run_78","Run_62","Run_13","Run_85",
-#        "Run_65","Run_34","Run_87","Run_11","Run_83","Run_16","Run_77",
-#        "Run_81"))
-# ggplot(tmp, aes(estimate, -log10(p.value), color = abnormal, 
-#                 label = gsub("Run_", "", run))) + 
-#          geom_point() + geom_text_repel()+ theme_pubr()
-# 
-# tmp %>% arrange(-p.value)
-# # runs 2
-```
 
 ```{r}
 ### plot boxplot of the runs
@@ -185,7 +164,7 @@ run_filter_red = ggarrange(f3, f4, ncol = 1, nrow = 2, align = "v", common.legen
                top = text_grob("red circles: samples Ct>40", color = "red", size = 10))
 ))
 
-#ggsave("ggsave/run_filter_red_plot.pdf", plot = run_filter_red_plot, width = 6, height = 4)
+ggsave("ggsave/run_filter_red_plot.pdf", plot = run_filter_red_plot, width = 6, height = 4)
 ```
 
 ## Sample-level QC
@@ -209,10 +188,6 @@ ct_distribution_after_qc<-mcov_samples_filtered %>% filter(INSTRUMENT_RESULT<50)
 ```
 
 ```{r}
-nrow(mcov_samples_filtered %>% filter(INSTRUMENT_RESULT < 26))
-```
-
-```{r}
 #How did exclusion criteria change distribution of sample Ct values?
 
 ct_distribution_after_qc<-mcov_samples_filtered %>% filter(INSTRUMENT_RESULT<50) %>% ggplot(aes(x=INSTRUMENT_RESULT)) + geom_histogram(binwidth=1) + theme_bw() + xlab("Ct value")
@@ -224,16 +199,14 @@ ct_distribution_before_qc<-mcov_samples %>% filter(INSTRUMENT_RESULT<50) %>% ggp
 
 
 ct_distribution_after_qc<-mcov_samples_filtered %>% filter(INSTRUMENT_RESULT<50)
-
 ct_distribution_before_qc<-mcov_samples %>% filter(INSTRUMENT_RESULT<50)
-
 plot1_ct_before_after = ggplot(aes(x=INSTRUMENT_RESULT), data = ct_distribution_before_qc) + 
   geom_histogram(binwidth = 1, fill = "grey") +
   geom_histogram(data = ct_distribution_after_qc, binwidth=1) + theme_pubr() + 
   xlab("Ct value") + ylab("# samples") #+ geom_vline(xintercept = 26,
                                                #     linetype = "dashed")
 
-#ggsave("ggsave/plot1_ct_before_after.pdf", plot1_ct_before_after, height = 2, width = 4)
+ggsave("ggsave/plot1_ct_before_after.pdf", plot1_ct_before_after, height = 2, width = 4)
 ```
 
 ## Preliminary minor variant distributions
@@ -261,7 +234,12 @@ for (i in 1:nrow(primers)){
   primer_positions_v4.1 <- c(primer_positions_v4.1, primers[i,]$start:primers[i,]$end)
 }
 
-primer_positions_all <- c(primer_positions_v3, primer_positions_v4, primer_positions_v4.1) %>% unique()
+problem_sites = fread("problematic_sites_sarsCov2_v8-20211027.vcf", skip = 88)
+
+primer_positions_all <- c(primer_positions_v3, primer_positions_v4, primer_positions_v4.1,
+                          problem_sites$POS) %>% unique()
+
+saveRDS(primer_positions_all, "primer_positions_all.rds")
 
 #reference genome with nucleotide positions of genes
 genes <- fread("ntpos_gene_update.csv", data.table = F)
@@ -271,39 +249,39 @@ genes$gene_id <- factor(genes$gene_id, levels = gene_names)
 
 ```{r}
 ### Update this if you change sample inclusion criteria
-#minor_variant_sites_allLevels <- fread("minor_sites_100x_all_20220507.csv", data.table=F) %>% mutate(MCoVNumber=regmatches(name, #regexpr("[M,R,S,O]CoV.[0-9]+", name)) %>% str_remove("-") %>% str_remove("_")) %>% filter(MCoVNumber %in% #mcov_samples_filtered$MCoVNumber)
-#write.csv(minor_variant_sites_allLevels, "minor_sites_workingsamples_100-98minimum.csv", row.names=FALSE)
-```
-
-```{r}
 ### Update this if change the thresholds for counting minor variants
 #file was already filtered to sites with minimum 100 reads depth and A,C,T,G minor variant present and binomial significance check passed. Further filtering:
-#depth_at_site<-100
-#minor_frequency<-0.01
-#total_minor_reads<-50
-#
-#minor_variant_sites_threshold_applied<-fread("minor_sites_workingsamples_100-98minimum.csv", data.table = F) %>%
-#  filter(totalcount>=depth_at_site) %>%
-#  filter(!ntpos %in% 1:265) %>% filter(!ntpos>29674) %>% #don't include 5' and 3' UTR
-#  filter(!ntpos %in% primer_positions_all) %>% #don't include primer binding sites
-#  filter(major %in% c("A","C","T","G")) %>% #don't want minor variants at consensus deletion sites
-#  filter(minorfreq>=minor_frequency) #%>%
-#  #filter(minorfreq*totalcount>=total_minor_reads) 
 
-#write.csv(minor_variant_sites_threshold_applied, 'minor_variants_filtered_100x0.01_50.csv')
+
+# depth_at_site<-100
+# minor_frequency<-0.01
+# total_minor_reads<-50
+# #
+# minor_variant_sites_threshold <- fread("minor_sites_100x_all_20220507.csv") %>% 
+#   mutate(MCoVNumber=regmatches(name, 
+#                                regexpr("[M,R,S,O]CoV.[0-9]+", name)) %>% 
+#            str_remove("-") %>% str_remove("_")) %>% 
+#   filter(MCoVNumber %in% mcov_samples_filtered$MCoVNumber) %>%
+#   filter(totalcount>=depth_at_site) %>%
+#   filter(!ntpos %in% c(1:265)) %>% filter(!ntpos>29674) %>% #don't include 5' and 3' UTR
+#   filter(!ntpos %in% primer_positions_all) %>% #don't include primer binding sites
+#   filter(major %in% c("A","C","T","G")) %>% #don't want minor variants at consensus deletion sites
+#   filter(minorfreq>=minor_frequency) %>%
+#   filter(minorfreq*totalcount>=total_minor_reads) 
+# write_feather(minor_variant_sites_threshold, 'processing/minor_variants_filtered_100x0.01_50.arrow')
 ```
 
-```{r}
-#load file that was generated/saved above
-minor_variant_sites_threshold <- fread('minor_variants_filtered_100x0.01_50.csv', data.table=F) 
-minor_variant_sites_threshold %>% pull(MCoVNumber) %>% unique %>% length
-```
+
 
 ## Overall minor variant richness
 
 ```{r}
+source("./scripts/startup.R")
+minor_variant_sites_threshold <- read_feather('processing/minor_variants_filtered_100x0.01_50.arrow') 
 n_var <- minor_variant_sites_threshold %>% group_by(MCoVNumber) %>% tally() %>% arrange(desc(n)) #this tally doesn't include any samples with 0 variants, so need to join to original list
-samples_n_var <- mcov_samples_filtered %>% left_join(n_var) %>% arrange(COLLECTION_DT) %>% mutate(n_var=tidyr::replace_na(n,0)) 
+samples_n_var <- mcov_samples_filtered %>% left_join(n_var) %>% 
+  arrange(COLLECTION_DT) %>% mutate(n_var=tidyr::replace_na(n,0))
+write_feather(samples_n_var, "processing/samples_n_var.arrow")
 
 #what's the distribution of minor variant richness?
 ### 
@@ -317,12 +295,7 @@ samples_n_var <- mcov_samples_filtered %>% left_join(n_var) %>% arrange(COLLECTI
 
 ```{r}
 #what's the relationship between minor variant richness and Ct value?
-# n_var_select_ct<-samples_n_var %>% filter(INSTRUMENT_RESULT<50) %>% 
-#   ggplot(aes(x=INSTRUMENT_RESULT, y=n_var)) + 
-#   geom_point(color = "black", shape = 1, alpha = 1/8) + theme_pubr() + 
-#   scale_x_continuous(breaks = seq(0,40,by = 5)) +
-#   xlab("Ct value") + ylab("No. minor variants")
-# ggMarginal(n_var_select_ct)
+
 
 n_var_select_ct = samples_n_var %>% filter(INSTRUMENT_RESULT<50) %>% 
   ggplot(aes(x=INSTRUMENT_RESULT, y=n_var)) + 
@@ -337,7 +310,8 @@ n_var_select_ct = samples_n_var %>% filter(INSTRUMENT_RESULT<50) %>%
 plot1_target = ggMarginal(n_var_select_ct, type = "violin", draw_quantiles = 
              c(.25,.5,.75))
 
-#ggsave("ggsave/plot1_target.pdf", plot = plot1_target, height = 3, width = 4)
+ggsave("ggsave/plot1_target.pdf", plot = plot1_target, height = 3, width = 4)
+
 ((
 n_var_select_ct_filtered = samples_n_var %>% 
   filter(INSTRUMENT_RESULT<26 & n_var < 30) %>% 
@@ -349,10 +323,6 @@ n_var_select_ct_filtered = samples_n_var %>%
   theme_pubr() + xlab("Ct value") + ylab("n_var") +
   geom_smooth(color = "red") + stat_cor(method = "spearman", cor.coef.name = "rho")
 ))
-
-
-
-
 
 patient_ordinal_counts = samples_n_var %>% 
   filter(INSTRUMENT_RESULT<26 & n_var < 30) %>% 
@@ -373,25 +343,12 @@ ct_n_var_postfilter_plot = ggMarginal(n_var_select_ct_filtered_labeled,
 ct_n_var_postfilter_plot
 
 
-
-
 ggsave("ggsave/ct_n_var_postfilter_plot.pdf", 
        ct_n_var_postfilter_plot, height = 3, width = 3)
 
-
-# patient_data<-fread("sample_and_patient_data.csv",data.table=F)  %>% mutate(MCoVNumber=str_remove(mcov_id, "-")) %>% select(-COLLECTION_DT) %>% inner_join(samples_n_var)
-
-# test_ct = patient_data %>% filter(INSTRUMENT_RESULT<40) %>% ggplot(aes(x=INSTRUMENT_RESULT, y=n_var, color = as.factor(Admitted_YN))) + geom_point(shape = 1, alpha = 1/8) + geom_density_2d(alpha = 1/2) + scale_y_continuous(trans = "log2", breaks = c(0,1,2,4,8,16,32,64, 128, 256))+
-#   scale_x_continuous(breaks = seq(0,40,by = 5)) +
-#   theme_pubr() + xlab("Ct value") + ylab("# minor variants") + geom_smooth(method=lm)
-# ggMarginal(test_ct, groupColour = TRUE, groupFill = TRUE, type = "violin", draw_quantiles = c(.5))
-
-
-#FIGURE 1B
-
-#n_var_ct_zoom<-n_var_select_ct + annotate("rect", xmin=5, xmax=26, ymin=0, ymax=Inf, alpha=0.2, fill="gray") + theme_pubr
-#n_var_ct_zoom
+saveRDS(ct_n_var_postfilter_plot, "ct_n_var_postfilter_plot.rds")
 ```
+
 ```{r}
 # Quantile information for the violin plot above
 print(samples_n_var %>% 
@@ -402,35 +359,15 @@ print(samples_n_var %>%
 ```
 
 ```{r}
-# test_ct = patient_data %>% filter(INSTRUMENT_RESULT<40) %>% mutate(vaccine = if_else(Vaccine_Status=="No vaccine", 0, 1)) %>% ggplot(aes(x=INSTRUMENT_RESULT, y=n_var, color = as.factor(vaccine))) + geom_point(shape = 1, alpha = 1/8) + geom_density_2d(alpha = 1/2) + scale_y_continuous(trans = "log2", breaks = c(0,1,2,4,8,16,32,64, 128, 256))+
-#   scale_x_continuous(breaks = seq(0,40,by = 5)) +
-#   theme_pubr() + xlab("Ct value") + ylab("No. minor variants") + geom_smooth(method=lm)
-# ggMarginal(test_ct, groupColour = TRUE, groupFill = TRUE, type = "violin", draw_quantiles = c(.5))
-```
-
-```{r}
-# ggdraw(n_var_select + theme_half_open(12)) +
-#    draw_plot(n_var_ct_zoom, x=0.3, y=0.3, width=0.7, height=0.7) +
-#    draw_plot_label(
-#      c("a", "b"),
-#      c(0, 0.3),
-#      c(1, 1),
-#      size = 12
-#    )
-```
-
-```{r}
 samples_n_var %>% pull(n_var) %>% summary()
 ```
 
 ## Reproducibility of minor variants
 
-```{r}
-all_replicates_table_filt <- fread("replicated_samples.csv", data.table=F) %>% filter(MCoVNumber %in% samples_n_var$MCoVNumber)
-```
 
 ```{r}
-minors_table<-all_replicates_table_filt %>% 
+minors_table<- fread("replicated_samples.csv", data.table=F) %>% 
+  filter(MCoVNumber %in% samples_n_var$MCoVNumber) %>% 
   filter(major.original %in% c("A","C","T","G")) %>% 
   filter(minor.original %in% c("A","C","T","G")) %>%
   filter(totalcount.original>=100 & minorfreq.original>=0.01 & totalcount.original*minorfreq.original>=50 & 
@@ -531,7 +468,7 @@ replicate_mega_plot = plot_grid(
                       labels=c("b","c")), nrow=2, labels=c("a",NA)), 
   rep_indiv_samples, labels=c(NA, "d"), rel_widths=c(1.1,1))
 
-#ggsave("ggsave/replicate_mega_plot.pdf", plot = replicate_mega_plot, height = 8, width = 14.5)
+ggsave("ggsave/replicate_mega_plot.pdf", plot = replicate_mega_plot, height = 8, width = 14.5)
 
 ```
 
@@ -550,20 +487,20 @@ lineages_figure <- mcov_samples_filtered %>%
   mutate(variant=case_when(startsWith(scorpio_call,"Delta") ~ "Delta",
         startsWith(scorpio_call,"Alpha") ~ "Alpha",
         !(startsWith(scorpio_call,"Delta")|
-            startsWith(scorpio_call,"Alpha")) ~ "other lineages")) %>%
+            startsWith(scorpio_call,"Alpha")) ~ "other")) %>%
   mutate(variant=if_else(lineage == "B.1.2","B.1.2",variant)) %>%
-  ggplot(aes(x=COLLECTION_DT)) + geom_bar(aes(fill=variant))  + 
+  mutate(month = floor_date(COLLECTION_DT, "month")) %>%
+  ggplot(aes(x=month)) + geom_bar(aes(fill=variant))  + 
 #  scale_fill_manual(values=c("#00A08A", "#F2AD00", "#F98400", "#5BBCD6")) + 
-  xlab("Collection date") + ylab("No. samples") + 
+  xlab("Collection date") + ylab("No. samples") +   scale_x_date(labels = date_format("%m-%Y")) +
   ggtitle(paste0('Final sample set, \n Ct<26 & n_var<30, n = ',length(samples_to_analyze))) + 
   scale_x_date(minor_breaks="1 month") + theme_pubr() +
-  theme(axis.text.x = element_text(angle = 90, vjust = .5))
-
+  theme(axis.text.x = element_text(angle = 90, vjust = .5), legend.position = "top")
 
 #SUPP FIG 2
 lineages_figure
-
-ggsave("ggsave/lineages_figure.pdf", plot = lineages_figure, height = 3, width = 3 )
+saveRDS(lineages_figure, "ggsave/lineages_figure.rds")
+ggsave("ggsave/lineages_figure.pdf", plot = lineages_figure, height = 4, width = 5)
 ```
 
 ```{r}
@@ -625,35 +562,7 @@ dots_depth_median = ggarrange(n_var_by_coverage, n_var_depth_averages,
 dots_plots = ggarrange(runs_samples_dots, dots_depth_median, labels = list("C"), 
                        ncol = 1, heights = c(1,1))
 
-
-
 run_filtration = ggarrange(plots_by_run, dots_plots, ncol = 2, widths = c(2.5, 1))
 run_filtration
 ggsave("ggsave/run_filtration.pdf", run_filtration, height = 8, width = 12)
-
-```
-
-
-
-```{r}
-# samples_n_var %>% filter(INSTRUMENT_RESULT<26) %>% filter(run=="Run_90") %>% ggplot(aes(x=median_coverage, y=n_var)) + geom_point() + ggtitle("Run 90 - very high average coverage") + theme_bw() + geom_hline(yintercept=10, linetype="dotted")
-```
-
-```{r}
-# samples_n_var %>% filter(INSTRUMENT_RESULT<26) %>% filter(run=="Run_29") %>% ggplot(aes(x=median_coverage, y=n_var)) + geom_point() + ggtitle("Run 29 - lower average coverage") + theme_bw() + geom_hline(yintercept=10, linetype="dotted")
-```
-
-
-```{r}
-#are the run-specific differences in coverage stronger in samples that were included or that weren't included?
-# mcov_samples %>% mutate(hq_sample=if_else(MCoVNumber %in% minor_sites_lowct$MCoVNumber, "hq","excluded")) %>%  ggplot(aes(x=run, y=median_coverage)) + geom_boxplot() +theme_bw() + theme(axis.text.x=element_text(angle=90)) + facet_grid(hq_sample~.) 
-```
-
-```{r}
-#SUPP FIG 3
-run_post_filter = plot_grid(n_var_by_run, plot_grid(n_var_by_coverage, n_var_depth_averages, nrow=2), ncol=2, rel_widths = c(2,1), labels=c("a","b"))
-
-run_post_filter
-
-#ggsave("ggsave/run_post_filter.pdf", plot = run_post_filter, width = 8, height = 4)
 ```

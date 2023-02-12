@@ -5,13 +5,9 @@ output: html_notebook
 
 ```{r}
 source("./scripts/startup.R")
-source("./scripts/load_data.R")
 ```
 
 ```{r}
-#install.packages('tableone', 'officer' )
-library(tableone)
-
 var_factors = c('Duration', 'CT', 'COLLECTION_DT', 'n_var')
 cat_factors = c('age18under','age55plus','sex','chronic_lung_disease',
                  'chronic_liver_disease', 'chronic_kidney_disease', 'chronic_heart_disease', 
@@ -20,7 +16,7 @@ cat_factors = c('age18under','age55plus','sex','chronic_lung_disease',
                  'surveillance','median_coverage','PUI')
 factors = c(var_factors, cat_factors)
 
-
+patient_counts_30 = read_feather("processing/patient_counts_30.arrow")
 patient_counts_30$sex = droplevels(patient_counts_30$sex)
 table1 <- CreateTableOne(factors, patient_counts_30, strata = c("admitted_hospital"), addOverall = T) #%>% 
                            #filter(collection_date >= "2021-07-01"), strata = c("admitted_hospital"))

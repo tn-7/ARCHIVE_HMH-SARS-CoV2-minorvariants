@@ -1763,87 +1763,111 @@ pre code {
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc291cmNlKFwiLi9zY3JpcHRzL3N0YXJ0dXAuUlwiKVxuc291cmNlKFwiLi9zY3JpcHRzL2xvYWRfZGF0YS5SXCIpXG5gYGAifQ== -->
-<pre class="r"><code>source(&quot;./scripts/startup.R&quot;)
-source(&quot;./scripts/load_data.R&quot;)</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc291cmNlKFwiLi9zY3JpcHRzL3N0YXJ0dXAuUlwiKVxuYGBgIn0= -->
+<pre class="r"><code>source(&quot;./scripts/startup.R&quot;)</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiSm9pbmluZywgYnkgPSBcIk1Db1ZOdW1iZXJcIkpvaW5pbmcsIGJ5ID0gXCJNQ29WTnVtYmVyXCJ8LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS18XG58PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT18XG5Kb2luaW5nLCBieSA9IGMoXCJNQ29WTnVtYmVyXCIsIFwicnVuXCIpSm9pbmluZywgYnkgPSBcIk1Db1ZOdW1iZXJcIkpvaW5pbmcsIGJ5ID0gYyhcIk1Db1ZOdW1iZXJcIiwgXCJtY292X2lkXCIpXG4ifQ== -->
-<pre><code>Joining, by = &quot;MCoVNumber&quot;Joining, by = &quot;MCoVNumber&quot;|--------------------------------------------------|
-|==================================================|
-Joining, by = c(&quot;MCoVNumber&quot;, &quot;run&quot;)Joining, by = &quot;MCoVNumber&quot;Joining, by = c(&quot;MCoVNumber&quot;, &quot;mcov_id&quot;)</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiVGhlIGZvbGxvd2luZyBwYWNrYWdlcyBoYXZlIGJlZW4gdW5sb2FkZWQ6XG5cYmdnYnJlYWssIGRldnRvb2xzLCB1c2V0aGlzLCBhcnJvdywgbWFncml0dHIsIHNjYWxlcywgbHVicmlkYXRlLCBnZ0V4dHJhLCBnZ3NjaSwgcGhlYXRtYXAsIEJpb3N0cmluZ3MsIEdlbm9tZUluZm9EYiwgWFZlY3RvciwgSVJhbmdlcywgUzRWZWN0b3JzLCBCaW9jR2VuZXJpY3MsIGdncmVwZWwsIGRhdGEudGFibGUsIGdncHViciwgdmlyaWRpcywgdmlyaWRpc0xpdGUsIGdnZ2VuZXMsIGdnZm9yY2UsIGdsbW5ldCwgTWF0cml4LCBjb3dwbG90LCBmb3JjYXRzLCBzdHJpbmdyLCBkcGx5ciwgcHVycnIsIHJlYWRyLCB0aWR5ciwgdGliYmxlLCBnZ3Bsb3QyLCB0aWR5dmVyc2UsIHBhY21hblxuXG5Mb2FkaW5nIHJlcXVpcmVkIHBhY2thZ2U6IHBhY21hblxuIn0= -->
+<pre><code>The following packages have been unloaded:
+ggbreak, devtools, usethis, arrow, magrittr, scales, lubridate, ggExtra, ggsci, pheatmap, Biostrings, GenomeInfoDb, XVector, IRanges, S4Vectors, BiocGenerics, ggrepel, data.table, ggpubr, viridis, viridisLite, gggenes, ggforce, glmnet, Matrix, cowplot, forcats, stringr, dplyr, purrr, readr, tidyr, tibble, ggplot2, tidyverse, pacman
+
+Loading required package: pacman</code></pre>
 <!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuI3NvdXJjZShcIi4vc2NyaXB0cy9sb2FkX2RhdGEuUlwiKVxuYGBgIn0= -->
+<pre class="r"><code>#source(&quot;./scripts/load_data.R&quot;)</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxueCA9IHByaW50KHRhYmxlMSwgbm9ubm9ybWFsID0gYygnbl92YXInKSwgY3JhbVZhcnMgPSBcInNleFwiLCBxdW90ZSA9IEZBTFNFLCBub1NwYWNlcyA9IFQpXG5cbmBgYCJ9 -->
-<pre class="r"><code>x = print(table1, nonnormal = c(&#39;n_var&#39;), cramVars = &quot;sex&quot;, quote = FALSE, noSpaces = T)
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudmFyX2ZhY3RvcnMgPSBjKCdEdXJhdGlvbicsICdDVCcsICdDT0xMRUNUSU9OX0RUJywgJ25fdmFyJylcbmNhdF9mYWN0b3JzID0gYygnYWdlMTh1bmRlcicsJ2FnZTU1cGx1cycsJ3NleCcsJ2Nocm9uaWNfbHVuZ19kaXNlYXNlJyxcbiAgICAgICAgICAgICAgICAgJ2Nocm9uaWNfbGl2ZXJfZGlzZWFzZScsICdjaHJvbmljX2tpZG5leV9kaXNlYXNlJywgJ2Nocm9uaWNfaGVhcnRfZGlzZWFzZScsIFxuICAgICAgICAgICAgICAgICAndHJhbnNwbGFudF9wYXRpZW50JywgJ2hpdicsICdoeXBlcnRlbnNpb24nLCAnZGlhYmV0ZXMnLCAnY2FuY2VyJywgJ29iZXNpdHknLCBcbiAgICAgICAgICAgICAgICAgJ3BsYXNtYScsICdtQWInLCAnYWRtaXR0ZWRfaG9zcGl0YWwnLCd2YWNjaW5lX3N0YXR1cycsICd2b2NEZWx0YScsICd2b2NBbHBoYScsJ3Rlc3QnLFxuICAgICAgICAgICAgICAgICAnc3VydmVpbGxhbmNlJywnbWVkaWFuX2NvdmVyYWdlJywnUFVJJylcbmZhY3RvcnMgPSBjKHZhcl9mYWN0b3JzLCBjYXRfZmFjdG9ycylcblxucGF0aWVudF9jb3VudHNfMzAgPSByZWFkX2ZlYXRoZXIoXCJwcm9jZXNzaW5nL3BhdGllbnRfY291bnRzXzMwLmFycm93XCIpXG5wYXRpZW50X2NvdW50c18zMCRzZXggPSBkcm9wbGV2ZWxzKHBhdGllbnRfY291bnRzXzMwJHNleClcbnRhYmxlMSA8LSBDcmVhdGVUYWJsZU9uZShmYWN0b3JzLCBwYXRpZW50X2NvdW50c18zMCwgc3RyYXRhID0gYyhcImFkbWl0dGVkX2hvc3BpdGFsXCIpLCBhZGRPdmVyYWxsID0gVCkgIyU+JSBcbmBgYCJ9 -->
+<pre class="r"><code>var_factors = c(&#39;Duration&#39;, &#39;CT&#39;, &#39;COLLECTION_DT&#39;, &#39;n_var&#39;)
+cat_factors = c(&#39;age18under&#39;,&#39;age55plus&#39;,&#39;sex&#39;,&#39;chronic_lung_disease&#39;,
+                 &#39;chronic_liver_disease&#39;, &#39;chronic_kidney_disease&#39;, &#39;chronic_heart_disease&#39;, 
+                 &#39;transplant_patient&#39;, &#39;hiv&#39;, &#39;hypertension&#39;, &#39;diabetes&#39;, &#39;cancer&#39;, &#39;obesity&#39;, 
+                 &#39;plasma&#39;, &#39;mAb&#39;, &#39;admitted_hospital&#39;,&#39;vaccine_status&#39;, &#39;vocDelta&#39;, &#39;vocAlpha&#39;,&#39;test&#39;,
+                 &#39;surveillance&#39;,&#39;median_coverage&#39;,&#39;PUI&#39;)
+factors = c(var_factors, cat_factors)
+
+patient_counts_30 = read_feather(&quot;processing/patient_counts_30.arrow&quot;)
+patient_counts_30$sex = droplevels(patient_counts_30$sex)
+table1 &lt;- CreateTableOne(factors, patient_counts_30, strata = c(&quot;admitted_hospital&quot;), addOverall = T) #%&gt;% </code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiV2FybmluZzogVGhlIGRhdGEgZnJhbWUgZG9lcyBub3QgaGF2ZTogdGVzdCAgRHJvcHBlZFdhcm5pbmc6IERyb3BwaW5nIHZhcmlhYmxlKHMpIENPTExFQ1RJT05fRFQgIGR1ZSB0byB1bnN1cHBvcnRlZCBjbGFzcy5cbiJ9 -->
+<pre><code>Warning: The data frame does not have: test  DroppedWarning: Dropping variable(s) COLLECTION_DT  due to unsupported class.</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgI2ZpbHRlcihjb2xsZWN0aW9uX2RhdGUgPj0gXCIyMDIxLTA3LTAxXCIpLCBzdHJhdGEgPSBjKFwiYWRtaXR0ZWRfaG9zcGl0YWxcIikpXG5cbnggPSBwcmludCh0YWJsZTEsIG5vbm5vcm1hbCA9IGMoJ25fdmFyJyksIGNyYW1WYXJzID0gXCJzZXhcIiwgcXVvdGUgPSBGQUxTRSwgbm9TcGFjZXMgPSBUKVxuYGBgIn0= -->
+<pre class="r"><code>                           #filter(collection_date &gt;= &quot;2021-07-01&quot;), strata = c(&quot;admitted_hospital&quot;))
+
+x = print(table1, nonnormal = c(&#39;n_var&#39;), cramVars = &quot;sex&quot;, quote = FALSE, noSpaces = T)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBTdHJhdGlmaWVkIGJ5IGFkbWl0dGVkX2hvc3BpdGFsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBPdmVyYWxsICAgICAgICAgICAgICAgMCAgICAgICAgICAgICAgICAgICAgIDEgICAgICAgICAgICAgICAgICAgIHAgICAgIFxuICBuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgNTczNiAgICAgICAgICAgICAgICAgIDM2NjMgICAgICAgICAgICAgICAgICAyMDczICAgICAgICAgICAgICAgICAgICAgICBcbiAgRHVyYXRpb24gKG1lYW4gKFNEKSkgICAgICAgICAgIDI4Mi44NSAoMTcwLjk4KSAgICAgICAzMDEuNzUgKDE4Ny43NCkgICAgICAgMjQ5LjQ2ICgxMjkuODkpICAgICAgPDAuMDAxXG4gIENUIChtZWFuIChTRCkpICAgICAgICAgICAgICAgICAxOC41OCAoMy42MCkgICAgICAgICAgMTguMDggKDMuNTUpICAgICAgICAgIDE5LjQ3ICgzLjUxKSAgICAgICAgIDwwLjAwMVxuICBuX3ZhciAobWVkaWFuIFtJUVJdKSAgICAgICAgICAgNC4wMCBbMi4wMCwgOC4wMF0gICAgIDQuMDAgWzIuMDAsIDcuMDBdICAgICA1LjAwIFszLjAwLCA5LjAwXSAgICA8MC4wMDFcbiAgYWdlMTh1bmRlciA9IDEgKCUpICAgICAgICAgICAgIDM1MCAoNi4xKSAgICAgICAgICAgICAzNDkgKDkuNSkgICAgICAgICAgICAgMSAoMC4wKSAgICAgICAgICAgICAgPDAuMDAxXG4gIGFnZTU1cGx1cyA9IDEgKCUpICAgICAgICAgICAgICAyMzYxICg0MS4yKSAgICAgICAgICAgMTA5NSAoMjkuOSkgICAgICAgICAgIDEyNjYgKDYxLjEpICAgICAgICAgIDwwLjAwMVxuICBzZXggPSBGL00gKCUpICAgICAgICAgICAgICAgICAgMzEwNC8yNjMyICg1NC4xLzQ1LjkpIDIxNTAvMTUxMyAoNTguNy80MS4zKSA5NTQvMTExOSAoNDYuMC81NC4wKSA8MC4wMDFcbiAgY2hyb25pY19sdW5nX2Rpc2Vhc2UgPSAxICglKSAgIDc0NiAoMTMuMCkgICAgICAgICAgICAzODkgKDEwLjYpICAgICAgICAgICAgMzU3ICgxNy4yKSAgICAgICAgICAgPDAuMDAxXG4gIGNocm9uaWNfbGl2ZXJfZGlzZWFzZSA9IDEgKCUpICAzNjAgKDYuMykgICAgICAgICAgICAgMTg4ICg1LjEpICAgICAgICAgICAgIDE3MiAoOC4zKSAgICAgICAgICAgIDwwLjAwMVxuICBjaHJvbmljX2tpZG5leV9kaXNlYXNlID0gMSAoJSkgNTIwICg5LjEpICAgICAgICAgICAgIDEzMCAoMy41KSAgICAgICAgICAgICAzOTAgKDE4LjgpICAgICAgICAgICA8MC4wMDFcbiAgY2hyb25pY19oZWFydF9kaXNlYXNlID0gMSAoJSkgIDIzOTYgKDQxLjgpICAgICAgICAgICAxMTA1ICgzMC4yKSAgICAgICAgICAgMTI5MSAoNjIuMykgICAgICAgICAgPDAuMDAxXG4gIHRyYW5zcGxhbnRfcGF0aWVudCA9IDEgKCUpICAgICA2OSAoMS4yKSAgICAgICAgICAgICAgMjcgKDAuNykgICAgICAgICAgICAgIDQyICgyLjApICAgICAgICAgICAgIDwwLjAwMVxuICBoaXYgPSAxICglKSAgICAgICAgICAgICAgICAgICAgMTAgKDAuMikgICAgICAgICAgICAgIDcgKDAuMikgICAgICAgICAgICAgICAzICgwLjEpICAgICAgICAgICAgICAwLjk0MCBcbiAgaHlwZXJ0ZW5zaW9uID0gMSAoJSkgICAgICAgICAgIDIyNDEgKDM5LjEpICAgICAgICAgICAxMTMxICgzMC45KSAgICAgICAgICAgMTExMCAoNTMuNSkgICAgICAgICAgPDAuMDAxXG4gIGRpYWJldGVzID0gMSAoJSkgICAgICAgICAgICAgICAxMTU2ICgyMC4yKSAgICAgICAgICAgNDc1ICgxMy4wKSAgICAgICAgICAgIDY4MSAoMzIuOSkgICAgICAgICAgIDwwLjAwMVxuICBjYW5jZXIgPSAxICglKSAgICAgICAgICAgICAgICAgMzYyICg2LjMpICAgICAgICAgICAgIDE2NiAoNC41KSAgICAgICAgICAgICAxOTYgKDkuNSkgICAgICAgICAgICA8MC4wMDFcbiAgb2Jlc2l0eSA9IDEgKCUpICAgICAgICAgICAgICAgIDI0MDggKDQyLjApICAgICAgICAgICAxMzIyICgzNi4xKSAgICAgICAgICAgMTA4NiAoNTIuNCkgICAgICAgICAgPDAuMDAxXG4gIHBsYXNtYSA9IDEgKCUpICAgICAgICAgICAgICAgICAzMjYgKDUuNykgICAgICAgICAgICAgMyAoMC4xKSAgICAgICAgICAgICAgIDMyMyAoMTUuNikgICAgICAgICAgIDwwLjAwMVxuICBtQWIgPSAxICglKSAgICAgICAgICAgICAgICAgICAgODEyICgxNC4yKSAgICAgICAgICAgIDY3MCAoMTguMykgICAgICAgICAgICAxNDIgKDYuOCkgICAgICAgICAgICA8MC4wMDFcbiAgYWRtaXR0ZWRfaG9zcGl0YWwgPSAxICglKSAgICAgIDIwNzMgKDM2LjEpICAgICAgICAgICAwICgwLjApICAgICAgICAgICAgICAgMjA3MyAoMTAwLjApICAgICAgICAgPDAuMDAxXG4gIHZhY2NpbmVfc3RhdHVzID0gMSAoJSkgICAgICAgICA5NTEgKDE2LjYpICAgICAgICAgICAgNzMzICgyMC4wKSAgICAgICAgICAgIDIxOCAoMTAuNSkgICAgICAgICAgIDwwLjAwMVxuICB2b2NEZWx0YSA9IDEgKCUpICAgICAgICAgICAgICAgMjA2NyAoMzYuMCkgICAgICAgICAgIDEzMDEgKDM1LjUpICAgICAgICAgICA3NjYgKDM3LjApICAgICAgICAgICAwLjI5MCBcbiAgdm9jQWxwaGEgPSAxICglKSAgICAgICAgICAgICAgIDgwOCAoMTQuMSkgICAgICAgICAgICA0MDQgKDExLjApICAgICAgICAgICAgNDA0ICgxOS41KSAgICAgICAgICAgPDAuMDAxXG4gIHN1cnZlaWxsYW5jZSA9IDEgKCUpICAgICAgICAgICA3MDMgKDEyLjMpICAgICAgICAgICAgNjgzICgxOC42KSAgICAgICAgICAgIDIwICgxLjApICAgICAgICAgICAgIDwwLjAwMVxuICBtZWRpYW5fY292ZXJhZ2UgKG1lYW4gKFNEKSkgICAgNDg2My45MiAoMTM0MS40NikgICAgIDQ4ODguNTUgKDEzMTMuMjYpICAgICA0ODIwLjM4ICgxMzg5LjE1KSAgICAwLjA2NCBcbiAgUFVJICglKSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPDAuMDAxXG4gICAgIE5vbi1QVUkgICAgICAgICAgICAgICAgICAgICAxNzE1ICgyOS45KSAgICAgICAgICAgOTYyICgyNi4zKSAgICAgICAgICAgIDc1MyAoMzYuMykgICAgICAgICAgICAgICAgIFxuICAgICBQVUkgICAgICAgICAgICAgICAgICAgICAgICAgMzAxMyAoNTIuNSkgICAgICAgICAgIDIzMjUgKDYzLjUpICAgICAgICAgICA2ODggKDMzLjIpICAgICAgICAgICAgICAgICBcbiAgICAgVW5rbm93biAgICAgICAgICAgICAgICAgICAgIDEwMDggKDE3LjYpICAgICAgICAgICAzNzYgKDEwLjMpICAgICAgICAgICAgNjMyICgzMC41KSAgICAgICAgICAgICAgICAgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFN0cmF0aWZpZWQgYnkgYWRtaXR0ZWRfaG9zcGl0YWxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHRlc3QgICBcbiAgbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgRHVyYXRpb24gKG1lYW4gKFNEKSkgICAgICAgICAgICAgICAgICBcbiAgQ1QgKG1lYW4gKFNEKSkgICAgICAgICAgICAgICAgICAgICAgICBcbiAgbl92YXIgKG1lZGlhbiBbSVFSXSkgICAgICAgICAgIG5vbm5vcm1cbiAgYWdlMTh1bmRlciA9IDEgKCUpICAgICAgICAgICAgICAgICAgICBcbiAgYWdlNTVwbHVzID0gMSAoJSkgICAgICAgICAgICAgICAgICAgICBcbiAgc2V4ID0gRi9NICglKSAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgY2hyb25pY19sdW5nX2Rpc2Vhc2UgPSAxICglKSAgICAgICAgICBcbiAgY2hyb25pY19saXZlcl9kaXNlYXNlID0gMSAoJSkgICAgICAgICBcbiAgY2hyb25pY19raWRuZXlfZGlzZWFzZSA9IDEgKCUpICAgICAgICBcbiAgY2hyb25pY19oZWFydF9kaXNlYXNlID0gMSAoJSkgICAgICAgICBcbiAgdHJhbnNwbGFudF9wYXRpZW50ID0gMSAoJSkgICAgICAgICAgICBcbiAgaGl2ID0gMSAoJSkgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgaHlwZXJ0ZW5zaW9uID0gMSAoJSkgICAgICAgICAgICAgICAgICBcbiAgZGlhYmV0ZXMgPSAxICglKSAgICAgICAgICAgICAgICAgICAgICBcbiAgY2FuY2VyID0gMSAoJSkgICAgICAgICAgICAgICAgICAgICAgICBcbiAgb2Jlc2l0eSA9IDEgKCUpICAgICAgICAgICAgICAgICAgICAgICBcbiAgcGxhc21hID0gMSAoJSkgICAgICAgICAgICAgICAgICAgICAgICBcbiAgbUFiID0gMSAoJSkgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgYWRtaXR0ZWRfaG9zcGl0YWwgPSAxICglKSAgICAgICAgICAgICBcbiAgdmFjY2luZV9zdGF0dXMgPSAxICglKSAgICAgICAgICAgICAgICBcbiAgdm9jRGVsdGEgPSAxICglKSAgICAgICAgICAgICAgICAgICAgICBcbiAgdm9jQWxwaGEgPSAxICglKSAgICAgICAgICAgICAgICAgICAgICBcbiAgc3VydmVpbGxhbmNlID0gMSAoJSkgICAgICAgICAgICAgICAgICBcbiAgbWVkaWFuX2NvdmVyYWdlIChtZWFuIChTRCkpICAgICAgICAgICBcbiAgUFVJICglKSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgICAgTm9uLVBVSSAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgICAgUFVJICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgICAgVW5rbm93biAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiJ9 -->
+<pre><code>                                Stratified by admitted_hospital
+                                 Overall               0                     1                    p     
+  n                              5736                  3663                  2073                       
+  Duration (mean (SD))           282.85 (170.98)       301.75 (187.74)       249.46 (129.89)      &lt;0.001
+  CT (mean (SD))                 18.58 (3.60)          18.08 (3.55)          19.47 (3.51)         &lt;0.001
+  n_var (median [IQR])           4.00 [2.00, 8.00]     4.00 [2.00, 7.00]     5.00 [3.00, 9.00]    &lt;0.001
+  age18under = 1 (%)             350 (6.1)             349 (9.5)             1 (0.0)              &lt;0.001
+  age55plus = 1 (%)              2361 (41.2)           1095 (29.9)           1266 (61.1)          &lt;0.001
+  sex = F/M (%)                  3104/2632 (54.1/45.9) 2150/1513 (58.7/41.3) 954/1119 (46.0/54.0) &lt;0.001
+  chronic_lung_disease = 1 (%)   746 (13.0)            389 (10.6)            357 (17.2)           &lt;0.001
+  chronic_liver_disease = 1 (%)  360 (6.3)             188 (5.1)             172 (8.3)            &lt;0.001
+  chronic_kidney_disease = 1 (%) 520 (9.1)             130 (3.5)             390 (18.8)           &lt;0.001
+  chronic_heart_disease = 1 (%)  2396 (41.8)           1105 (30.2)           1291 (62.3)          &lt;0.001
+  transplant_patient = 1 (%)     69 (1.2)              27 (0.7)              42 (2.0)             &lt;0.001
+  hiv = 1 (%)                    10 (0.2)              7 (0.2)               3 (0.1)              0.940 
+  hypertension = 1 (%)           2241 (39.1)           1131 (30.9)           1110 (53.5)          &lt;0.001
+  diabetes = 1 (%)               1156 (20.2)           475 (13.0)            681 (32.9)           &lt;0.001
+  cancer = 1 (%)                 362 (6.3)             166 (4.5)             196 (9.5)            &lt;0.001
+  obesity = 1 (%)                2408 (42.0)           1322 (36.1)           1086 (52.4)          &lt;0.001
+  plasma = 1 (%)                 326 (5.7)             3 (0.1)               323 (15.6)           &lt;0.001
+  mAb = 1 (%)                    812 (14.2)            670 (18.3)            142 (6.8)            &lt;0.001
+  admitted_hospital = 1 (%)      2073 (36.1)           0 (0.0)               2073 (100.0)         &lt;0.001
+  vaccine_status = 1 (%)         951 (16.6)            733 (20.0)            218 (10.5)           &lt;0.001
+  vocDelta = 1 (%)               2067 (36.0)           1301 (35.5)           766 (37.0)           0.290 
+  vocAlpha = 1 (%)               808 (14.1)            404 (11.0)            404 (19.5)           &lt;0.001
+  surveillance = 1 (%)           703 (12.3)            683 (18.6)            20 (1.0)             &lt;0.001
+  median_coverage (mean (SD))    4863.92 (1341.46)     4888.55 (1313.26)     4820.38 (1389.15)    0.064 
+  PUI (%)                                                                                         &lt;0.001
+     Non-PUI                     1715 (29.9)           962 (26.3)            753 (36.3)                 
+     PUI                         3013 (52.5)           2325 (63.5)           688 (33.2)                 
+     Unknown                     1008 (17.6)           376 (10.3)            632 (30.5)                 
+                                Stratified by admitted_hospital
+                                 test   
+  n                                     
+  Duration (mean (SD))                  
+  CT (mean (SD))                        
+  n_var (median [IQR])           nonnorm
+  age18under = 1 (%)                    
+  age55plus = 1 (%)                     
+  sex = F/M (%)                         
+  chronic_lung_disease = 1 (%)          
+  chronic_liver_disease = 1 (%)         
+  chronic_kidney_disease = 1 (%)        
+  chronic_heart_disease = 1 (%)         
+  transplant_patient = 1 (%)            
+  hiv = 1 (%)                           
+  hypertension = 1 (%)                  
+  diabetes = 1 (%)                      
+  cancer = 1 (%)                        
+  obesity = 1 (%)                       
+  plasma = 1 (%)                        
+  mAb = 1 (%)                           
+  admitted_hospital = 1 (%)             
+  vaccine_status = 1 (%)                
+  vocDelta = 1 (%)                      
+  vocAlpha = 1 (%)                      
+  surveillance = 1 (%)                  
+  median_coverage (mean (SD))           
+  PUI (%)                               
+     Non-PUI                            
+     PUI                                
+     Unknown                            </code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxud3JpdGUuY3N2KHgsIGZpbGUgPSBcImdnc2F2ZS9UYWJsZTFfYnlfYWRtaXR0ZWRfYWxsZGF0ZXMuY3N2XCIpXG5cbmBgYCJ9 -->
+<pre class="r"><code>write.csv(x, file = &quot;ggsave/Table1_by_admitted_alldates.csv&quot;)
 </code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBTdHJhdGlmaWVkIGJ5IGFkbWl0dGVkX2hvc3BpdGFsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBPdmVyYWxsICAgICAgICAgICAgICAgMCAgICAgICAgICAgICAgICAgICAgXG4gIG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICA1NzI0ICAgICAgICAgICAgICAgICAgMzY1OCAgICAgICAgICAgICAgICAgXG4gIER1cmF0aW9uIChtZWFuIChTRCkpICAgICAgICAgICAyODIuOTUgKDE3MC45OSkgICAgICAgMzAxLjgxICgxODcuNzMpICAgICAgXG4gIENUIChtZWFuIChTRCkpICAgICAgICAgICAgICAgICAxOC41OCAoMy42MCkgICAgICAgICAgMTguMDggKDMuNTUpICAgICAgICAgXG4gIG5fdmFyIChtZWRpYW4gW0lRUl0pICAgICAgICAgICA1LjAwIFsyLjAwLCA4LjAwXSAgICAgNC4wMCBbMi4wMCwgNy4wMF0gICAgXG4gIGFnZTE4dW5kZXIgPSAxICglKSAgICAgICAgICAgICAzNTAgKDYuMSkgICAgICAgICAgICAgMzQ5ICg5LjUpICAgICAgICAgICAgXG4gIGFnZTU1cGx1cyA9IDEgKCUpICAgICAgICAgICAgICAyMzU2ICg0MS4yKSAgICAgICAgICAgMTA5NCAoMjkuOSkgICAgICAgICAgXG4gIHNleCA9IEYvTSAoJSkgICAgICAgICAgICAgICAgICAzMTAwLzI2MjQgKDU0LjIvNDUuOCkgMjE0OS8xNTA5ICg1OC43LzQxLjMpXG4gIGNocm9uaWNfbHVuZ19kaXNlYXNlID0gMSAoJSkgICA3NDUgKDEzLjApICAgICAgICAgICAgMzg4ICgxMC42KSAgICAgICAgICAgXG4gIGNocm9uaWNfbGl2ZXJfZGlzZWFzZSA9IDEgKCUpICAzNTkgKDYuMykgICAgICAgICAgICAgMTg4ICg1LjEpICAgICAgICAgICAgXG4gIGNocm9uaWNfa2lkbmV5X2Rpc2Vhc2UgPSAxICglKSA1MTkgKDkuMSkgICAgICAgICAgICAgMTMwICgzLjYpICAgICAgICAgICAgXG4gIGNocm9uaWNfaGVhcnRfZGlzZWFzZSA9IDEgKCUpICAyMzkwICg0MS44KSAgICAgICAgICAgMTEwMyAoMzAuMikgICAgICAgICAgXG4gIHRyYW5zcGxhbnRfcGF0aWVudCA9IDEgKCUpICAgICA2OSAoMS4yKSAgICAgICAgICAgICAgMjcgKDAuNykgICAgICAgICAgICAgXG4gIGhpdiA9IDEgKCUpICAgICAgICAgICAgICAgICAgICAxMCAoMC4yKSAgICAgICAgICAgICAgNyAoMC4yKSAgICAgICAgICAgICAgXG4gIGh5cGVydGVuc2lvbiA9IDEgKCUpICAgICAgICAgICAyMjM3ICgzOS4xKSAgICAgICAgICAgMTEyOSAoMzAuOSkgICAgICAgICAgXG4gIGRpYWJldGVzID0gMSAoJSkgICAgICAgICAgICAgICAxMTUyICgyMC4xKSAgICAgICAgICAgNDc0ICgxMy4wKSAgICAgICAgICAgXG4gIGNhbmNlciA9IDEgKCUpICAgICAgICAgICAgICAgICAzNjAgKDYuMykgICAgICAgICAgICAgMTY2ICg0LjUpICAgICAgICAgICAgXG4gIG9iZXNpdHkgPSAxICglKSAgICAgICAgICAgICAgICAyNDAwICg0MS45KSAgICAgICAgICAgMTMxNyAoMzYuMCkgICAgICAgICAgXG4gIHBsYXNtYSA9IDEgKCUpICAgICAgICAgICAgICAgICAzMjUgKDUuNykgICAgICAgICAgICAgMyAoMC4xKSAgICAgICAgICAgICAgXG4gIG1BYiA9IDEgKCUpICAgICAgICAgICAgICAgICAgICA4MDkgKDE0LjEpICAgICAgICAgICAgNjY4ICgxOC4zKSAgICAgICAgICAgXG4gIGFkbWl0dGVkX2hvc3BpdGFsID0gMSAoJSkgICAgICAyMDY2ICgzNi4xKSAgICAgICAgICAgMCAoMC4wKSAgICAgICAgICAgICAgXG4gIHZhY2NpbmVfc3RhdHVzID0gMSAoJSkgICAgICAgICA5NTAgKDE2LjYpICAgICAgICAgICAgNzMzICgyMC4wKSAgICAgICAgICAgXG4gIHZvY0RlbHRhID0gMSAoJSkgICAgICAgICAgICAgICAyMDY0ICgzNi4xKSAgICAgICAgICAgMTMwMCAoMzUuNSkgICAgICAgICAgXG4gIHZvY0FscGhhID0gMSAoJSkgICAgICAgICAgICAgICA4MDYgKDE0LjEpICAgICAgICAgICAgNDA0ICgxMS4wKSAgICAgICAgICAgXG4gIHN1cnZlaWxsYW5jZSA9IDEgKCUpICAgICAgICAgICA3MDIgKDEyLjMpICAgICAgICAgICAgNjgyICgxOC42KSAgICAgICAgICAgXG4gIG1lZGlhbl9jb3ZlcmFnZSAobWVhbiAoU0QpKSAgICA0ODY1LjA4ICgxMzQyLjA0KSAgICAgNDg4OS4xMCAoMTMxMy40OSkgICAgXG4gIFBVSSAoJSkgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXG4gICAgIE5vbi1QVUkgICAgICAgICAgICAgICAgICAgICAxNzEwICgyOS45KSAgICAgICAgICAgOTYxICgyNi4zKSAgICAgICAgICAgXG4gICAgIFBVSSAgICAgICAgICAgICAgICAgICAgICAgICAzMDEwICg1Mi42KSAgICAgICAgICAgMjMyMiAoNjMuNSkgICAgICAgICAgXG4gICAgIFVua25vd24gICAgICAgICAgICAgICAgICAgICAxMDA0ICgxNy41KSAgICAgICAgICAgMzc1ICgxMC4zKSAgICAgICAgICAgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFN0cmF0aWZpZWQgYnkgYWRtaXR0ZWRfaG9zcGl0YWxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDEgICAgICAgICAgICAgICAgICAgIHAgICAgICB0ZXN0ICAgXG4gIG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAyMDY2ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFxuICBEdXJhdGlvbiAobWVhbiAoU0QpKSAgICAgICAgICAgMjQ5LjU1ICgxMjkuOTEpICAgICAgPDAuMDAxICAgICAgICBcbiAgQ1QgKG1lYW4gKFNEKSkgICAgICAgICAgICAgICAgIDE5LjQ2ICgzLjUxKSAgICAgICAgIDwwLjAwMSAgICAgICAgXG4gIG5fdmFyIChtZWRpYW4gW0lRUl0pICAgICAgICAgICA2LjAwIFszLjAwLCAxMC4wMF0gICA8MC4wMDEgbm9ubm9ybVxuICBhZ2UxOHVuZGVyID0gMSAoJSkgICAgICAgICAgICAgMSAoMC4wKSAgICAgICAgICAgICAgPDAuMDAxICAgICAgICBcbiAgYWdlNTVwbHVzID0gMSAoJSkgICAgICAgICAgICAgIDEyNjIgKDYxLjEpICAgICAgICAgIDwwLjAwMSAgICAgICAgXG4gIHNleCA9IEYvTSAoJSkgICAgICAgICAgICAgICAgICA5NTEvMTExNSAoNDYuMC81NC4wKSA8MC4wMDEgICAgICAgIFxuICBjaHJvbmljX2x1bmdfZGlzZWFzZSA9IDEgKCUpICAgMzU3ICgxNy4zKSAgICAgICAgICAgPDAuMDAxICAgICAgICBcbiAgY2hyb25pY19saXZlcl9kaXNlYXNlID0gMSAoJSkgIDE3MSAoOC4zKSAgICAgICAgICAgIDwwLjAwMSAgICAgICAgXG4gIGNocm9uaWNfa2lkbmV5X2Rpc2Vhc2UgPSAxICglKSAzODkgKDE4LjgpICAgICAgICAgICA8MC4wMDEgICAgICAgIFxuICBjaHJvbmljX2hlYXJ0X2Rpc2Vhc2UgPSAxICglKSAgMTI4NyAoNjIuMykgICAgICAgICAgPDAuMDAxICAgICAgICBcbiAgdHJhbnNwbGFudF9wYXRpZW50ID0gMSAoJSkgICAgIDQyICgyLjApICAgICAgICAgICAgIDwwLjAwMSAgICAgICAgXG4gIGhpdiA9IDEgKCUpICAgICAgICAgICAgICAgICAgICAzICgwLjEpICAgICAgICAgICAgICAwLjk0MyAgICAgICAgIFxuICBoeXBlcnRlbnNpb24gPSAxICglKSAgICAgICAgICAgMTEwOCAoNTMuNikgICAgICAgICAgPDAuMDAxICAgICAgICBcbiAgZGlhYmV0ZXMgPSAxICglKSAgICAgICAgICAgICAgIDY3OCAoMzIuOCkgICAgICAgICAgIDwwLjAwMSAgICAgICAgXG4gIGNhbmNlciA9IDEgKCUpICAgICAgICAgICAgICAgICAxOTQgKDkuNCkgICAgICAgICAgICA8MC4wMDEgICAgICAgIFxuICBvYmVzaXR5ID0gMSAoJSkgICAgICAgICAgICAgICAgMTA4MyAoNTIuNCkgICAgICAgICAgPDAuMDAxICAgICAgICBcbiAgcGxhc21hID0gMSAoJSkgICAgICAgICAgICAgICAgIDMyMiAoMTUuNikgICAgICAgICAgIDwwLjAwMSAgICAgICAgXG4gIG1BYiA9IDEgKCUpICAgICAgICAgICAgICAgICAgICAxNDEgKDYuOCkgICAgICAgICAgICA8MC4wMDEgICAgICAgIFxuICBhZG1pdHRlZF9ob3NwaXRhbCA9IDEgKCUpICAgICAgMjA2NiAoMTAwLjApICAgICAgICAgPDAuMDAxICAgICAgICBcbiAgdmFjY2luZV9zdGF0dXMgPSAxICglKSAgICAgICAgIDIxNyAoMTAuNSkgICAgICAgICAgIDwwLjAwMSAgICAgICAgXG4gIHZvY0RlbHRhID0gMSAoJSkgICAgICAgICAgICAgICA3NjQgKDM3LjApICAgICAgICAgICAwLjI4OCAgICAgICAgIFxuICB2b2NBbHBoYSA9IDEgKCUpICAgICAgICAgICAgICAgNDAyICgxOS41KSAgICAgICAgICAgPDAuMDAxICAgICAgICBcbiAgc3VydmVpbGxhbmNlID0gMSAoJSkgICAgICAgICAgIDIwICgxLjApICAgICAgICAgICAgIDwwLjAwMSAgICAgICAgXG4gIG1lZGlhbl9jb3ZlcmFnZSAobWVhbiAoU0QpKSAgICA0ODIyLjU2ICgxMzkwLjQ1KSAgICAwLjA3MiAgICAgICAgIFxuICBQVUkgKCUpICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPDAuMDAxICAgICAgICBcbiAgICAgTm9uLVBVSSAgICAgICAgICAgICAgICAgICAgIDc0OSAoMzYuMykgICAgICAgICAgICAgICAgICAgICAgICAgXG4gICAgIFBVSSAgICAgICAgICAgICAgICAgICAgICAgICA2ODggKDMzLjMpICAgICAgICAgICAgICAgICAgICAgICAgIFxuICAgICBVbmtub3duICAgICAgICAgICAgICAgICAgICAgNjI5ICgzMC40KSAgICAgICAgICAgICAgICAgICAgICAgICBcbiJ9 -->
-<pre><code>                                Stratified by admitted_hospital
-                                 Overall               0                    
-  n                              5724                  3658                 
-  Duration (mean (SD))           282.95 (170.99)       301.81 (187.73)      
-  CT (mean (SD))                 18.58 (3.60)          18.08 (3.55)         
-  n_var (median [IQR])           5.00 [2.00, 8.00]     4.00 [2.00, 7.00]    
-  age18under = 1 (%)             350 (6.1)             349 (9.5)            
-  age55plus = 1 (%)              2356 (41.2)           1094 (29.9)          
-  sex = F/M (%)                  3100/2624 (54.2/45.8) 2149/1509 (58.7/41.3)
-  chronic_lung_disease = 1 (%)   745 (13.0)            388 (10.6)           
-  chronic_liver_disease = 1 (%)  359 (6.3)             188 (5.1)            
-  chronic_kidney_disease = 1 (%) 519 (9.1)             130 (3.6)            
-  chronic_heart_disease = 1 (%)  2390 (41.8)           1103 (30.2)          
-  transplant_patient = 1 (%)     69 (1.2)              27 (0.7)             
-  hiv = 1 (%)                    10 (0.2)              7 (0.2)              
-  hypertension = 1 (%)           2237 (39.1)           1129 (30.9)          
-  diabetes = 1 (%)               1152 (20.1)           474 (13.0)           
-  cancer = 1 (%)                 360 (6.3)             166 (4.5)            
-  obesity = 1 (%)                2400 (41.9)           1317 (36.0)          
-  plasma = 1 (%)                 325 (5.7)             3 (0.1)              
-  mAb = 1 (%)                    809 (14.1)            668 (18.3)           
-  admitted_hospital = 1 (%)      2066 (36.1)           0 (0.0)              
-  vaccine_status = 1 (%)         950 (16.6)            733 (20.0)           
-  vocDelta = 1 (%)               2064 (36.1)           1300 (35.5)          
-  vocAlpha = 1 (%)               806 (14.1)            404 (11.0)           
-  surveillance = 1 (%)           702 (12.3)            682 (18.6)           
-  median_coverage (mean (SD))    4865.08 (1342.04)     4889.10 (1313.49)    
-  PUI (%)                                                                   
-     Non-PUI                     1710 (29.9)           961 (26.3)           
-     PUI                         3010 (52.6)           2322 (63.5)          
-     Unknown                     1004 (17.5)           375 (10.3)           
-                                Stratified by admitted_hospital
-                                 1                    p      test   
-  n                              2066                               
-  Duration (mean (SD))           249.55 (129.91)      &lt;0.001        
-  CT (mean (SD))                 19.46 (3.51)         &lt;0.001        
-  n_var (median [IQR])           6.00 [3.00, 10.00]   &lt;0.001 nonnorm
-  age18under = 1 (%)             1 (0.0)              &lt;0.001        
-  age55plus = 1 (%)              1262 (61.1)          &lt;0.001        
-  sex = F/M (%)                  951/1115 (46.0/54.0) &lt;0.001        
-  chronic_lung_disease = 1 (%)   357 (17.3)           &lt;0.001        
-  chronic_liver_disease = 1 (%)  171 (8.3)            &lt;0.001        
-  chronic_kidney_disease = 1 (%) 389 (18.8)           &lt;0.001        
-  chronic_heart_disease = 1 (%)  1287 (62.3)          &lt;0.001        
-  transplant_patient = 1 (%)     42 (2.0)             &lt;0.001        
-  hiv = 1 (%)                    3 (0.1)              0.943         
-  hypertension = 1 (%)           1108 (53.6)          &lt;0.001        
-  diabetes = 1 (%)               678 (32.8)           &lt;0.001        
-  cancer = 1 (%)                 194 (9.4)            &lt;0.001        
-  obesity = 1 (%)                1083 (52.4)          &lt;0.001        
-  plasma = 1 (%)                 322 (15.6)           &lt;0.001        
-  mAb = 1 (%)                    141 (6.8)            &lt;0.001        
-  admitted_hospital = 1 (%)      2066 (100.0)         &lt;0.001        
-  vaccine_status = 1 (%)         217 (10.5)           &lt;0.001        
-  vocDelta = 1 (%)               764 (37.0)           0.288         
-  vocAlpha = 1 (%)               402 (19.5)           &lt;0.001        
-  surveillance = 1 (%)           20 (1.0)             &lt;0.001        
-  median_coverage (mean (SD))    4822.56 (1390.45)    0.072         
-  PUI (%)                                             &lt;0.001        
-     Non-PUI                     749 (36.3)                         
-     PUI                         688 (33.3)                         
-     Unknown                     629 (30.4)                         </code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
@@ -1858,69 +1882,69 @@ Joining, by = c(&quot;MCoVNumber&quot;, &quot;run&quot;)Joining, by = &quot;MCoV
 <!-- rnb-source-begin eyJkYXRhIjoiYGBgclxueCA9IHByaW50KHRhYmxlMSwgbm9ubm9ybWFsID0gYygnbl92YXInKSwgY3JhbVZhcnMgPSBcInNleFwiLCBxdW90ZSA9IEZBTFNFLCBub1NwYWNlcyA9IFQpXG5gYGAifQ== -->
 <pre class="r"><code>x = print(table1, nonnormal = c(&#39;n_var&#39;), cramVars = &quot;sex&quot;, quote = FALSE, noSpaces = T)</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBTdHJhdGlmaWVkIGJ5IGFkbWl0dGVkX2hvc3BpdGFsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBPdmVyYWxsICAgICAgICAgICAgICAwICAgICAgICAgICAgICAgICAgIDEgICAgICAgICAgICAgICAgICBcbiAgbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDIwNzQgICAgICAgICAgICAgICAgIDEzMDEgICAgICAgICAgICAgICAgNzczICAgICAgICAgICAgICAgIFxuICBEdXJhdGlvbiAobWVhbiAoU0QpKSAgICAgICAgICAgMjc3LjY0ICgxNjcuNDApICAgICAgMjkwLjg4ICgxODEuNjIpICAgICAyNTUuMzYgKDEzNy41MikgICAgXG4gIENUIChtZWFuIChTRCkpICAgICAgICAgICAgICAgICAxOC42NSAoMy41MCkgICAgICAgICAxOC4xOCAoMy41MCkgICAgICAgIDE5LjQ0ICgzLjM3KSAgICAgICBcbiAgbl92YXIgKG1lZGlhbiBbSVFSXSkgICAgICAgICAgIDYuMDAgWzQuMDAsIDkuMDBdICAgIDUuMDAgWzMuMDAsIDguMDBdICAgNy4wMCBbNS4wMCwgMTEuMDBdIFxuICBhZ2UxOHVuZGVyID0gMSAoJSkgICAgICAgICAgICAgMTUwICg3LjIpICAgICAgICAgICAgMTUwICgxMS41KSAgICAgICAgICAwICgwLjApICAgICAgICAgICAgXG4gIGFnZTU1cGx1cyA9IDEgKCUpICAgICAgICAgICAgICA4MDcgKDM4LjkpICAgICAgICAgICAzNzcgKDI5LjApICAgICAgICAgIDQzMCAoNTUuNikgICAgICAgICBcbiAgc2V4ID0gRi9NICglKSAgICAgICAgICAgICAgICAgIDExMzYvOTM4ICg1NC44LzQ1LjIpIDc4NS81MTYgKDYwLjMvMzkuNykgMzUxLzQyMiAoNDUuNC81NC42KVxuICBjaHJvbmljX2x1bmdfZGlzZWFzZSA9IDEgKCUpICAgMjU1ICgxMi4zKSAgICAgICAgICAgMTMwICgxMC4wKSAgICAgICAgICAxMjUgKDE2LjIpICAgICAgICAgXG4gIGNocm9uaWNfbGl2ZXJfZGlzZWFzZSA9IDEgKCUpICAxMjMgKDUuOSkgICAgICAgICAgICA2OCAoNS4yKSAgICAgICAgICAgIDU1ICg3LjEpICAgICAgICAgICBcbiAgY2hyb25pY19raWRuZXlfZGlzZWFzZSA9IDEgKCUpIDE1MyAoNy40KSAgICAgICAgICAgIDM0ICgyLjYpICAgICAgICAgICAgMTE5ICgxNS40KSAgICAgICAgIFxuICBjaHJvbmljX2hlYXJ0X2Rpc2Vhc2UgPSAxICglKSAgODMxICg0MC4xKSAgICAgICAgICAgMzg2ICgyOS43KSAgICAgICAgICA0NDUgKDU3LjYpICAgICAgICAgXG4gIHRyYW5zcGxhbnRfcGF0aWVudCA9IDEgKCUpICAgICAyMSAoMS4wKSAgICAgICAgICAgICA5ICgwLjcpICAgICAgICAgICAgIDEyICgxLjYpICAgICAgICAgICBcbiAgaGl2ID0gMSAoJSkgICAgICAgICAgICAgICAgICAgIDMgKDAuMSkgICAgICAgICAgICAgIDEgKDAuMSkgICAgICAgICAgICAgMiAoMC4zKSAgICAgICAgICAgIFxuICBoeXBlcnRlbnNpb24gPSAxICglKSAgICAgICAgICAgNzM2ICgzNS41KSAgICAgICAgICAgMzc2ICgyOC45KSAgICAgICAgICAzNjAgKDQ2LjYpICAgICAgICAgXG4gIGRpYWJldGVzID0gMSAoJSkgICAgICAgICAgICAgICAzODEgKDE4LjQpICAgICAgICAgICAxNTYgKDEyLjApICAgICAgICAgIDIyNSAoMjkuMSkgICAgICAgICBcbiAgY2FuY2VyID0gMSAoJSkgICAgICAgICAgICAgICAgIDEzMSAoNi4zKSAgICAgICAgICAgIDYwICg0LjYpICAgICAgICAgICAgNzEgKDkuMikgICAgICAgICAgIFxuICBvYmVzaXR5ID0gMSAoJSkgICAgICAgICAgICAgICAgODg3ICg0Mi44KSAgICAgICAgICAgNDYyICgzNS41KSAgICAgICAgICA0MjUgKDU1LjApICAgICAgICAgXG4gIHBsYXNtYSA9IDEgKCUpICAgICAgICAgICAgICAgICA0MCAoMS45KSAgICAgICAgICAgICAxICgwLjEpICAgICAgICAgICAgIDM5ICg1LjApICAgICAgICAgICBcbiAgbUFiID0gMSAoJSkgICAgICAgICAgICAgICAgICAgIDM3NiAoMTguMSkgICAgICAgICAgIDMyMCAoMjQuNikgICAgICAgICAgNTYgKDcuMikgICAgICAgICAgIFxuICBhZG1pdHRlZF9ob3NwaXRhbCA9IDEgKCUpICAgICAgNzczICgzNy4zKSAgICAgICAgICAgMCAoMC4wKSAgICAgICAgICAgICA3NzMgKDEwMC4wKSAgICAgICAgXG4gIHZhY2NpbmVfc3RhdHVzID0gMSAoJSkgICAgICAgICA3MzEgKDM1LjIpICAgICAgICAgICA1NzYgKDQ0LjMpICAgICAgICAgIDE1NSAoMjAuMSkgICAgICAgICBcbiAgdm9jRGVsdGEgPSAxICglKSAgICAgICAgICAgICAgIDIwMzUgKDk4LjEpICAgICAgICAgIDEyODIgKDk4LjUpICAgICAgICAgNzUzICg5Ny40KSAgICAgICAgIFxuICB2b2NBbHBoYSA9IDEgKCUpICAgICAgICAgICAgICAgMTMgKDAuNikgICAgICAgICAgICAgOSAoMC43KSAgICAgICAgICAgICA0ICgwLjUpICAgICAgICAgICAgXG4gIHN1cnZlaWxsYW5jZSA9IDEgKCUpICAgICAgICAgICAyNTMgKDEyLjIpICAgICAgICAgICAyNDkgKDE5LjEpICAgICAgICAgIDQgKDAuNSkgICAgICAgICAgICBcbiAgbWVkaWFuX2NvdmVyYWdlIChtZWFuIChTRCkpICAgIDUxMjIuODAgKDE2MjUuODQpICAgIDUxNzUuMzAgKDE2MjEuMzcpICAgNTAzNC40MyAoMTYzMC41NykgIFxuICBQVUkgKCUpICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXG4gICAgIE5vbi1QVUkgICAgICAgICAgICAgICAgICAgICA1NzMgKDI3LjYpICAgICAgICAgICAzMDAgKDIzLjEpICAgICAgICAgIDI3MyAoMzUuMykgICAgICAgICBcbiAgICAgUFVJICAgICAgICAgICAgICAgICAgICAgICAgIDE0NzkgKDcxLjMpICAgICAgICAgIDk4NCAoNzUuNikgICAgICAgICAgNDk1ICg2NC4wKSAgICAgICAgIFxuICAgICBVbmtub3duICAgICAgICAgICAgICAgICAgICAgMjIgKDEuMSkgICAgICAgICAgICAgMTcgKDEuMykgICAgICAgICAgICA1ICgwLjYpICAgICAgICAgICAgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFN0cmF0aWZpZWQgYnkgYWRtaXR0ZWRfaG9zcGl0YWxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHAgICAgICB0ZXN0ICAgXG4gIG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFxuICBEdXJhdGlvbiAobWVhbiAoU0QpKSAgICAgICAgICAgPDAuMDAxICAgICAgICBcbiAgQ1QgKG1lYW4gKFNEKSkgICAgICAgICAgICAgICAgIDwwLjAwMSAgICAgICAgXG4gIG5fdmFyIChtZWRpYW4gW0lRUl0pICAgICAgICAgICA8MC4wMDEgbm9ubm9ybVxuICBhZ2UxOHVuZGVyID0gMSAoJSkgICAgICAgICAgICAgPDAuMDAxICAgICAgICBcbiAgYWdlNTVwbHVzID0gMSAoJSkgICAgICAgICAgICAgIDwwLjAwMSAgICAgICAgXG4gIHNleCA9IEYvTSAoJSkgICAgICAgICAgICAgICAgICA8MC4wMDEgICAgICAgIFxuICBjaHJvbmljX2x1bmdfZGlzZWFzZSA9IDEgKCUpICAgPDAuMDAxICAgICAgICBcbiAgY2hyb25pY19saXZlcl9kaXNlYXNlID0gMSAoJSkgIDAuMDk2ICAgICAgICAgXG4gIGNocm9uaWNfa2lkbmV5X2Rpc2Vhc2UgPSAxICglKSA8MC4wMDEgICAgICAgIFxuICBjaHJvbmljX2hlYXJ0X2Rpc2Vhc2UgPSAxICglKSAgPDAuMDAxICAgICAgICBcbiAgdHJhbnNwbGFudF9wYXRpZW50ID0gMSAoJSkgICAgIDAuMDk2ICAgICAgICAgXG4gIGhpdiA9IDEgKCUpICAgICAgICAgICAgICAgICAgICAwLjY0OCAgICAgICAgIFxuICBoeXBlcnRlbnNpb24gPSAxICglKSAgICAgICAgICAgPDAuMDAxICAgICAgICBcbiAgZGlhYmV0ZXMgPSAxICglKSAgICAgICAgICAgICAgIDwwLjAwMSAgICAgICAgXG4gIGNhbmNlciA9IDEgKCUpICAgICAgICAgICAgICAgICA8MC4wMDEgICAgICAgIFxuICBvYmVzaXR5ID0gMSAoJSkgICAgICAgICAgICAgICAgPDAuMDAxICAgICAgICBcbiAgcGxhc21hID0gMSAoJSkgICAgICAgICAgICAgICAgIDwwLjAwMSAgICAgICAgXG4gIG1BYiA9IDEgKCUpICAgICAgICAgICAgICAgICAgICA8MC4wMDEgICAgICAgIFxuICBhZG1pdHRlZF9ob3NwaXRhbCA9IDEgKCUpICAgICAgPDAuMDAxICAgICAgICBcbiAgdmFjY2luZV9zdGF0dXMgPSAxICglKSAgICAgICAgIDwwLjAwMSAgICAgICAgXG4gIHZvY0RlbHRhID0gMSAoJSkgICAgICAgICAgICAgICAwLjA5NyAgICAgICAgIFxuICB2b2NBbHBoYSA9IDEgKCUpICAgICAgICAgICAgICAgMC44NDMgICAgICAgICBcbiAgc3VydmVpbGxhbmNlID0gMSAoJSkgICAgICAgICAgIDwwLjAwMSAgICAgICAgXG4gIG1lZGlhbl9jb3ZlcmFnZSAobWVhbiAoU0QpKSAgICAwLjA1NiAgICAgICAgIFxuICBQVUkgKCUpICAgICAgICAgICAgICAgICAgICAgICAgPDAuMDAxICAgICAgICBcbiAgICAgTm9uLVBVSSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXG4gICAgIFBVSSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFxuICAgICBVbmtub3duICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiJ9 -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBTdHJhdGlmaWVkIGJ5IGFkbWl0dGVkX2hvc3BpdGFsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBPdmVyYWxsICAgICAgICAgICAgICAwICAgICAgICAgICAgICAgICAgIDEgICAgICAgICAgICAgICAgICAgcCAgICAgXG4gIG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAyMDc1ICAgICAgICAgICAgICAgICAxMzAxICAgICAgICAgICAgICAgIDc3NCAgICAgICAgICAgICAgICAgICAgICAgXG4gIER1cmF0aW9uIChtZWFuIChTRCkpICAgICAgICAgICAyNzcuNjAgKDE2Ny4zNykgICAgICAyOTAuODggKDE4MS42MikgICAgIDI1NS4yOCAoMTM3LjQ1KSAgICAgPDAuMDAxXG4gIENUIChtZWFuIChTRCkpICAgICAgICAgICAgICAgICAxOC42NSAoMy41MCkgICAgICAgICAxOC4xOCAoMy41MCkgICAgICAgIDE5LjQ0ICgzLjM3KSAgICAgICAgPDAuMDAxXG4gIG5fdmFyIChtZWRpYW4gW0lRUl0pICAgICAgICAgICA2LjAwIFszLjAwLCA5LjAwXSAgICA1LjAwIFszLjAwLCA4LjAwXSAgIDcuMDAgWzQuMDAsIDExLjAwXSAgPDAuMDAxXG4gIGFnZTE4dW5kZXIgPSAxICglKSAgICAgICAgICAgICAxNTAgKDcuMikgICAgICAgICAgICAxNTAgKDExLjUpICAgICAgICAgIDAgKDAuMCkgICAgICAgICAgICAgPDAuMDAxXG4gIGFnZTU1cGx1cyA9IDEgKCUpICAgICAgICAgICAgICA4MDcgKDM4LjkpICAgICAgICAgICAzNzcgKDI5LjApICAgICAgICAgIDQzMCAoNTUuNikgICAgICAgICAgPDAuMDAxXG4gIHNleCA9IEYvTSAoJSkgICAgICAgICAgICAgICAgICAxMTM2LzkzOSAoNTQuNy80NS4zKSA3ODUvNTE2ICg2MC4zLzM5LjcpIDM1MS80MjMgKDQ1LjMvNTQuNykgPDAuMDAxXG4gIGNocm9uaWNfbHVuZ19kaXNlYXNlID0gMSAoJSkgICAyNTUgKDEyLjMpICAgICAgICAgICAxMzAgKDEwLjApICAgICAgICAgIDEyNSAoMTYuMSkgICAgICAgICAgPDAuMDAxXG4gIGNocm9uaWNfbGl2ZXJfZGlzZWFzZSA9IDEgKCUpICAxMjMgKDUuOSkgICAgICAgICAgICA2OCAoNS4yKSAgICAgICAgICAgIDU1ICg3LjEpICAgICAgICAgICAgMC4wOTggXG4gIGNocm9uaWNfa2lkbmV5X2Rpc2Vhc2UgPSAxICglKSAxNTMgKDcuNCkgICAgICAgICAgICAzNCAoMi42KSAgICAgICAgICAgIDExOSAoMTUuNCkgICAgICAgICAgPDAuMDAxXG4gIGNocm9uaWNfaGVhcnRfZGlzZWFzZSA9IDEgKCUpICA4MzEgKDQwLjApICAgICAgICAgICAzODYgKDI5LjcpICAgICAgICAgIDQ0NSAoNTcuNSkgICAgICAgICAgPDAuMDAxXG4gIHRyYW5zcGxhbnRfcGF0aWVudCA9IDEgKCUpICAgICAyMSAoMS4wKSAgICAgICAgICAgICA5ICgwLjcpICAgICAgICAgICAgIDEyICgxLjYpICAgICAgICAgICAgMC4wOTYgXG4gIGhpdiA9IDEgKCUpICAgICAgICAgICAgICAgICAgICAzICgwLjEpICAgICAgICAgICAgICAxICgwLjEpICAgICAgICAgICAgIDIgKDAuMykgICAgICAgICAgICAgMC42NDkgXG4gIGh5cGVydGVuc2lvbiA9IDEgKCUpICAgICAgICAgICA3MzYgKDM1LjUpICAgICAgICAgICAzNzYgKDI4LjkpICAgICAgICAgIDM2MCAoNDYuNSkgICAgICAgICAgPDAuMDAxXG4gIGRpYWJldGVzID0gMSAoJSkgICAgICAgICAgICAgICAzODIgKDE4LjQpICAgICAgICAgICAxNTYgKDEyLjApICAgICAgICAgIDIyNiAoMjkuMikgICAgICAgICAgPDAuMDAxXG4gIGNhbmNlciA9IDEgKCUpICAgICAgICAgICAgICAgICAxMzEgKDYuMykgICAgICAgICAgICA2MCAoNC42KSAgICAgICAgICAgIDcxICg5LjIpICAgICAgICAgICAgPDAuMDAxXG4gIG9iZXNpdHkgPSAxICglKSAgICAgICAgICAgICAgICA4ODcgKDQyLjcpICAgICAgICAgICA0NjIgKDM1LjUpICAgICAgICAgIDQyNSAoNTQuOSkgICAgICAgICAgPDAuMDAxXG4gIHBsYXNtYSA9IDEgKCUpICAgICAgICAgICAgICAgICA0MCAoMS45KSAgICAgICAgICAgICAxICgwLjEpICAgICAgICAgICAgIDM5ICg1LjApICAgICAgICAgICAgPDAuMDAxXG4gIG1BYiA9IDEgKCUpICAgICAgICAgICAgICAgICAgICAzNzYgKDE4LjEpICAgICAgICAgICAzMjAgKDI0LjYpICAgICAgICAgIDU2ICg3LjIpICAgICAgICAgICAgPDAuMDAxXG4gIGFkbWl0dGVkX2hvc3BpdGFsID0gMSAoJSkgICAgICA3NzQgKDM3LjMpICAgICAgICAgICAwICgwLjApICAgICAgICAgICAgIDc3NCAoMTAwLjApICAgICAgICAgPDAuMDAxXG4gIHZhY2NpbmVfc3RhdHVzID0gMSAoJSkgICAgICAgICA3MzEgKDM1LjIpICAgICAgICAgICA1NzYgKDQ0LjMpICAgICAgICAgIDE1NSAoMjAuMCkgICAgICAgICAgPDAuMDAxXG4gIHZvY0RlbHRhID0gMSAoJSkgICAgICAgICAgICAgICAyMDM2ICg5OC4xKSAgICAgICAgICAxMjgyICg5OC41KSAgICAgICAgIDc1NCAoOTcuNCkgICAgICAgICAgMC4wOTggXG4gIHZvY0FscGhhID0gMSAoJSkgICAgICAgICAgICAgICAxMyAoMC42KSAgICAgICAgICAgICA5ICgwLjcpICAgICAgICAgICAgIDQgKDAuNSkgICAgICAgICAgICAgMC44NDEgXG4gIHN1cnZlaWxsYW5jZSA9IDEgKCUpICAgICAgICAgICAyNTMgKDEyLjIpICAgICAgICAgICAyNDkgKDE5LjEpICAgICAgICAgIDQgKDAuNSkgICAgICAgICAgICAgPDAuMDAxXG4gIG1lZGlhbl9jb3ZlcmFnZSAobWVhbiAoU0QpKSAgICA1MTIyLjg4ICgxNjI1LjQ1KSAgICA1MTc1LjMwICgxNjIxLjM3KSAgIDUwMzQuNzYgKDE2MjkuNTQpICAgMC4wNTcgXG4gIFBVSSAoJSkgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPDAuMDAxXG4gICAgIE5vbi1QVUkgICAgICAgICAgICAgICAgICAgICA1NzQgKDI3LjcpICAgICAgICAgICAzMDAgKDIzLjEpICAgICAgICAgIDI3NCAoMzUuNCkgICAgICAgICAgICAgICAgXG4gICAgIFBVSSAgICAgICAgICAgICAgICAgICAgICAgICAxNDc5ICg3MS4zKSAgICAgICAgICA5ODQgKDc1LjYpICAgICAgICAgIDQ5NSAoNjQuMCkgICAgICAgICAgICAgICAgXG4gICAgIFVua25vd24gICAgICAgICAgICAgICAgICAgICAyMiAoMS4xKSAgICAgICAgICAgICAxNyAoMS4zKSAgICAgICAgICAgIDUgKDAuNikgICAgICAgICAgICAgICAgICAgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFN0cmF0aWZpZWQgYnkgYWRtaXR0ZWRfaG9zcGl0YWxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHRlc3QgICBcbiAgbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgRHVyYXRpb24gKG1lYW4gKFNEKSkgICAgICAgICAgICAgICAgICBcbiAgQ1QgKG1lYW4gKFNEKSkgICAgICAgICAgICAgICAgICAgICAgICBcbiAgbl92YXIgKG1lZGlhbiBbSVFSXSkgICAgICAgICAgIG5vbm5vcm1cbiAgYWdlMTh1bmRlciA9IDEgKCUpICAgICAgICAgICAgICAgICAgICBcbiAgYWdlNTVwbHVzID0gMSAoJSkgICAgICAgICAgICAgICAgICAgICBcbiAgc2V4ID0gRi9NICglKSAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgY2hyb25pY19sdW5nX2Rpc2Vhc2UgPSAxICglKSAgICAgICAgICBcbiAgY2hyb25pY19saXZlcl9kaXNlYXNlID0gMSAoJSkgICAgICAgICBcbiAgY2hyb25pY19raWRuZXlfZGlzZWFzZSA9IDEgKCUpICAgICAgICBcbiAgY2hyb25pY19oZWFydF9kaXNlYXNlID0gMSAoJSkgICAgICAgICBcbiAgdHJhbnNwbGFudF9wYXRpZW50ID0gMSAoJSkgICAgICAgICAgICBcbiAgaGl2ID0gMSAoJSkgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgaHlwZXJ0ZW5zaW9uID0gMSAoJSkgICAgICAgICAgICAgICAgICBcbiAgZGlhYmV0ZXMgPSAxICglKSAgICAgICAgICAgICAgICAgICAgICBcbiAgY2FuY2VyID0gMSAoJSkgICAgICAgICAgICAgICAgICAgICAgICBcbiAgb2Jlc2l0eSA9IDEgKCUpICAgICAgICAgICAgICAgICAgICAgICBcbiAgcGxhc21hID0gMSAoJSkgICAgICAgICAgICAgICAgICAgICAgICBcbiAgbUFiID0gMSAoJSkgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgYWRtaXR0ZWRfaG9zcGl0YWwgPSAxICglKSAgICAgICAgICAgICBcbiAgdmFjY2luZV9zdGF0dXMgPSAxICglKSAgICAgICAgICAgICAgICBcbiAgdm9jRGVsdGEgPSAxICglKSAgICAgICAgICAgICAgICAgICAgICBcbiAgdm9jQWxwaGEgPSAxICglKSAgICAgICAgICAgICAgICAgICAgICBcbiAgc3VydmVpbGxhbmNlID0gMSAoJSkgICAgICAgICAgICAgICAgICBcbiAgbWVkaWFuX2NvdmVyYWdlIChtZWFuIChTRCkpICAgICAgICAgICBcbiAgUFVJICglKSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgICAgTm9uLVBVSSAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgICAgUFVJICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgICAgVW5rbm93biAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiJ9 -->
 <pre><code>                                Stratified by admitted_hospital
-                                 Overall              0                   1                  
-  n                              2074                 1301                773                
-  Duration (mean (SD))           277.64 (167.40)      290.88 (181.62)     255.36 (137.52)    
-  CT (mean (SD))                 18.65 (3.50)         18.18 (3.50)        19.44 (3.37)       
-  n_var (median [IQR])           6.00 [4.00, 9.00]    5.00 [3.00, 8.00]   7.00 [5.00, 11.00] 
-  age18under = 1 (%)             150 (7.2)            150 (11.5)          0 (0.0)            
-  age55plus = 1 (%)              807 (38.9)           377 (29.0)          430 (55.6)         
-  sex = F/M (%)                  1136/938 (54.8/45.2) 785/516 (60.3/39.7) 351/422 (45.4/54.6)
-  chronic_lung_disease = 1 (%)   255 (12.3)           130 (10.0)          125 (16.2)         
-  chronic_liver_disease = 1 (%)  123 (5.9)            68 (5.2)            55 (7.1)           
-  chronic_kidney_disease = 1 (%) 153 (7.4)            34 (2.6)            119 (15.4)         
-  chronic_heart_disease = 1 (%)  831 (40.1)           386 (29.7)          445 (57.6)         
-  transplant_patient = 1 (%)     21 (1.0)             9 (0.7)             12 (1.6)           
-  hiv = 1 (%)                    3 (0.1)              1 (0.1)             2 (0.3)            
-  hypertension = 1 (%)           736 (35.5)           376 (28.9)          360 (46.6)         
-  diabetes = 1 (%)               381 (18.4)           156 (12.0)          225 (29.1)         
-  cancer = 1 (%)                 131 (6.3)            60 (4.6)            71 (9.2)           
-  obesity = 1 (%)                887 (42.8)           462 (35.5)          425 (55.0)         
-  plasma = 1 (%)                 40 (1.9)             1 (0.1)             39 (5.0)           
-  mAb = 1 (%)                    376 (18.1)           320 (24.6)          56 (7.2)           
-  admitted_hospital = 1 (%)      773 (37.3)           0 (0.0)             773 (100.0)        
-  vaccine_status = 1 (%)         731 (35.2)           576 (44.3)          155 (20.1)         
-  vocDelta = 1 (%)               2035 (98.1)          1282 (98.5)         753 (97.4)         
-  vocAlpha = 1 (%)               13 (0.6)             9 (0.7)             4 (0.5)            
-  surveillance = 1 (%)           253 (12.2)           249 (19.1)          4 (0.5)            
-  median_coverage (mean (SD))    5122.80 (1625.84)    5175.30 (1621.37)   5034.43 (1630.57)  
-  PUI (%)                                                                                    
-     Non-PUI                     573 (27.6)           300 (23.1)          273 (35.3)         
-     PUI                         1479 (71.3)          984 (75.6)          495 (64.0)         
-     Unknown                     22 (1.1)             17 (1.3)            5 (0.6)            
+                                 Overall              0                   1                   p     
+  n                              2075                 1301                774                       
+  Duration (mean (SD))           277.60 (167.37)      290.88 (181.62)     255.28 (137.45)     &lt;0.001
+  CT (mean (SD))                 18.65 (3.50)         18.18 (3.50)        19.44 (3.37)        &lt;0.001
+  n_var (median [IQR])           6.00 [3.00, 9.00]    5.00 [3.00, 8.00]   7.00 [4.00, 11.00]  &lt;0.001
+  age18under = 1 (%)             150 (7.2)            150 (11.5)          0 (0.0)             &lt;0.001
+  age55plus = 1 (%)              807 (38.9)           377 (29.0)          430 (55.6)          &lt;0.001
+  sex = F/M (%)                  1136/939 (54.7/45.3) 785/516 (60.3/39.7) 351/423 (45.3/54.7) &lt;0.001
+  chronic_lung_disease = 1 (%)   255 (12.3)           130 (10.0)          125 (16.1)          &lt;0.001
+  chronic_liver_disease = 1 (%)  123 (5.9)            68 (5.2)            55 (7.1)            0.098 
+  chronic_kidney_disease = 1 (%) 153 (7.4)            34 (2.6)            119 (15.4)          &lt;0.001
+  chronic_heart_disease = 1 (%)  831 (40.0)           386 (29.7)          445 (57.5)          &lt;0.001
+  transplant_patient = 1 (%)     21 (1.0)             9 (0.7)             12 (1.6)            0.096 
+  hiv = 1 (%)                    3 (0.1)              1 (0.1)             2 (0.3)             0.649 
+  hypertension = 1 (%)           736 (35.5)           376 (28.9)          360 (46.5)          &lt;0.001
+  diabetes = 1 (%)               382 (18.4)           156 (12.0)          226 (29.2)          &lt;0.001
+  cancer = 1 (%)                 131 (6.3)            60 (4.6)            71 (9.2)            &lt;0.001
+  obesity = 1 (%)                887 (42.7)           462 (35.5)          425 (54.9)          &lt;0.001
+  plasma = 1 (%)                 40 (1.9)             1 (0.1)             39 (5.0)            &lt;0.001
+  mAb = 1 (%)                    376 (18.1)           320 (24.6)          56 (7.2)            &lt;0.001
+  admitted_hospital = 1 (%)      774 (37.3)           0 (0.0)             774 (100.0)         &lt;0.001
+  vaccine_status = 1 (%)         731 (35.2)           576 (44.3)          155 (20.0)          &lt;0.001
+  vocDelta = 1 (%)               2036 (98.1)          1282 (98.5)         754 (97.4)          0.098 
+  vocAlpha = 1 (%)               13 (0.6)             9 (0.7)             4 (0.5)             0.841 
+  surveillance = 1 (%)           253 (12.2)           249 (19.1)          4 (0.5)             &lt;0.001
+  median_coverage (mean (SD))    5122.88 (1625.45)    5175.30 (1621.37)   5034.76 (1629.54)   0.057 
+  PUI (%)                                                                                     &lt;0.001
+     Non-PUI                     574 (27.7)           300 (23.1)          274 (35.4)                
+     PUI                         1479 (71.3)          984 (75.6)          495 (64.0)                
+     Unknown                     22 (1.1)             17 (1.3)            5 (0.6)                   
                                 Stratified by admitted_hospital
-                                 p      test   
-  n                                            
-  Duration (mean (SD))           &lt;0.001        
-  CT (mean (SD))                 &lt;0.001        
-  n_var (median [IQR])           &lt;0.001 nonnorm
-  age18under = 1 (%)             &lt;0.001        
-  age55plus = 1 (%)              &lt;0.001        
-  sex = F/M (%)                  &lt;0.001        
-  chronic_lung_disease = 1 (%)   &lt;0.001        
-  chronic_liver_disease = 1 (%)  0.096         
-  chronic_kidney_disease = 1 (%) &lt;0.001        
-  chronic_heart_disease = 1 (%)  &lt;0.001        
-  transplant_patient = 1 (%)     0.096         
-  hiv = 1 (%)                    0.648         
-  hypertension = 1 (%)           &lt;0.001        
-  diabetes = 1 (%)               &lt;0.001        
-  cancer = 1 (%)                 &lt;0.001        
-  obesity = 1 (%)                &lt;0.001        
-  plasma = 1 (%)                 &lt;0.001        
-  mAb = 1 (%)                    &lt;0.001        
-  admitted_hospital = 1 (%)      &lt;0.001        
-  vaccine_status = 1 (%)         &lt;0.001        
-  vocDelta = 1 (%)               0.097         
-  vocAlpha = 1 (%)               0.843         
-  surveillance = 1 (%)           &lt;0.001        
-  median_coverage (mean (SD))    0.056         
-  PUI (%)                        &lt;0.001        
-     Non-PUI                                   
-     PUI                                       
-     Unknown                                   </code></pre>
+                                 test   
+  n                                     
+  Duration (mean (SD))                  
+  CT (mean (SD))                        
+  n_var (median [IQR])           nonnorm
+  age18under = 1 (%)                    
+  age55plus = 1 (%)                     
+  sex = F/M (%)                         
+  chronic_lung_disease = 1 (%)          
+  chronic_liver_disease = 1 (%)         
+  chronic_kidney_disease = 1 (%)        
+  chronic_heart_disease = 1 (%)         
+  transplant_patient = 1 (%)            
+  hiv = 1 (%)                           
+  hypertension = 1 (%)                  
+  diabetes = 1 (%)                      
+  cancer = 1 (%)                        
+  obesity = 1 (%)                       
+  plasma = 1 (%)                        
+  mAb = 1 (%)                           
+  admitted_hospital = 1 (%)             
+  vaccine_status = 1 (%)                
+  vocDelta = 1 (%)                      
+  vocAlpha = 1 (%)                      
+  surveillance = 1 (%)                  
+  median_coverage (mean (SD))           
+  PUI (%)                               
+     Non-PUI                            
+     PUI                                
+     Unknown                            </code></pre>
 <!-- rnb-output-end -->
 <!-- rnb-source-begin eyJkYXRhIjoiYGBgclxud3JpdGUuY3N2KHgsIGZpbGUgPSBcImdnc2F2ZS9UYWJsZTFfYnlfYWRtaXR0ZWRfSnVseU9ud2FyZHMuY3N2XCIpXG5cbmBgYCJ9 -->
 <pre class="r"><code>write.csv(x, file = &quot;ggsave/Table1_by_admitted_JulyOnwards.csv&quot;)
@@ -1930,7 +1954,7 @@ Joining, by = c(&quot;MCoVNumber&quot;, &quot;run&quot;)Joining, by = &quot;MCoV
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiUiBOb3RlYm9vayIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKYGBge3J9CnNvdXJjZSgiLi9zY3JpcHRzL3N0YXJ0dXAuUiIpCnNvdXJjZSgiLi9zY3JpcHRzL2xvYWRfZGF0YS5SIikKYGBgCgpgYGB7cn0KI2luc3RhbGwucGFja2FnZXMoJ3RhYmxlb25lJywgJ29mZmljZXInICkKbGlicmFyeSh0YWJsZW9uZSkKCnZhcl9mYWN0b3JzID0gYygnRHVyYXRpb24nLCAnQ1QnLCAnQ09MTEVDVElPTl9EVCcsICduX3ZhcicpCmNhdF9mYWN0b3JzID0gYygnYWdlMTh1bmRlcicsJ2FnZTU1cGx1cycsJ3NleCcsJ2Nocm9uaWNfbHVuZ19kaXNlYXNlJywKICAgICAgICAgICAgICAgICAnY2hyb25pY19saXZlcl9kaXNlYXNlJywgJ2Nocm9uaWNfa2lkbmV5X2Rpc2Vhc2UnLCAnY2hyb25pY19oZWFydF9kaXNlYXNlJywgCiAgICAgICAgICAgICAgICAgJ3RyYW5zcGxhbnRfcGF0aWVudCcsICdoaXYnLCAnaHlwZXJ0ZW5zaW9uJywgJ2RpYWJldGVzJywgJ2NhbmNlcicsICdvYmVzaXR5JywgCiAgICAgICAgICAgICAgICAgJ3BsYXNtYScsICdtQWInLCAnYWRtaXR0ZWRfaG9zcGl0YWwnLCd2YWNjaW5lX3N0YXR1cycsICd2b2NEZWx0YScsICd2b2NBbHBoYScsJ3Rlc3QnLAogICAgICAgICAgICAgICAgICdzdXJ2ZWlsbGFuY2UnLCdtZWRpYW5fY292ZXJhZ2UnLCdQVUknKQpmYWN0b3JzID0gYyh2YXJfZmFjdG9ycywgY2F0X2ZhY3RvcnMpCgoKcGF0aWVudF9jb3VudHNfMzAkc2V4ID0gZHJvcGxldmVscyhwYXRpZW50X2NvdW50c18zMCRzZXgpCnRhYmxlMSA8LSBDcmVhdGVUYWJsZU9uZShmYWN0b3JzLCBwYXRpZW50X2NvdW50c18zMCwgc3RyYXRhID0gYygiYWRtaXR0ZWRfaG9zcGl0YWwiKSwgYWRkT3ZlcmFsbCA9IFQpICMlPiUgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICNmaWx0ZXIoY29sbGVjdGlvbl9kYXRlID49ICIyMDIxLTA3LTAxIiksIHN0cmF0YSA9IGMoImFkbWl0dGVkX2hvc3BpdGFsIikpCgp4ID0gcHJpbnQodGFibGUxLCBub25ub3JtYWwgPSBjKCduX3ZhcicpLCBjcmFtVmFycyA9ICJzZXgiLCBxdW90ZSA9IEZBTFNFLCBub1NwYWNlcyA9IFQpCndyaXRlLmNzdih4LCBmaWxlID0gImdnc2F2ZS9UYWJsZTFfYnlfYWRtaXR0ZWRfYWxsZGF0ZXMuY3N2IikKCmBgYAoKYGBge3J9CnRhYmxlMSA8LSBDcmVhdGVUYWJsZU9uZShmYWN0b3JzLCBwYXRpZW50X2NvdW50c18zMCAlPiUgZmlsdGVyKGNvbGxlY3Rpb25fZGF0ZSA+PSAiMjAyMS0wNy0wMSIpLAogICAgc3RyYXRhID0gYygiYWRtaXR0ZWRfaG9zcGl0YWwiKSwgYWRkT3ZlcmFsbCA9IFQpCgp4ID0gcHJpbnQodGFibGUxLCBub25ub3JtYWwgPSBjKCduX3ZhcicpLCBjcmFtVmFycyA9ICJzZXgiLCBxdW90ZSA9IEZBTFNFLCBub1NwYWNlcyA9IFQpCndyaXRlLmNzdih4LCBmaWxlID0gImdnc2F2ZS9UYWJsZTFfYnlfYWRtaXR0ZWRfSnVseU9ud2FyZHMuY3N2IikKCmBgYAoK</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiUiBOb3RlYm9vayIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKYGBge3J9CnNvdXJjZSgiLi9zY3JpcHRzL3N0YXJ0dXAuUiIpCmBgYAoKYGBge3J9CnZhcl9mYWN0b3JzID0gYygnRHVyYXRpb24nLCAnQ1QnLCAnQ09MTEVDVElPTl9EVCcsICduX3ZhcicpCmNhdF9mYWN0b3JzID0gYygnYWdlMTh1bmRlcicsJ2FnZTU1cGx1cycsJ3NleCcsJ2Nocm9uaWNfbHVuZ19kaXNlYXNlJywKICAgICAgICAgICAgICAgICAnY2hyb25pY19saXZlcl9kaXNlYXNlJywgJ2Nocm9uaWNfa2lkbmV5X2Rpc2Vhc2UnLCAnY2hyb25pY19oZWFydF9kaXNlYXNlJywgCiAgICAgICAgICAgICAgICAgJ3RyYW5zcGxhbnRfcGF0aWVudCcsICdoaXYnLCAnaHlwZXJ0ZW5zaW9uJywgJ2RpYWJldGVzJywgJ2NhbmNlcicsICdvYmVzaXR5JywgCiAgICAgICAgICAgICAgICAgJ3BsYXNtYScsICdtQWInLCAnYWRtaXR0ZWRfaG9zcGl0YWwnLCd2YWNjaW5lX3N0YXR1cycsICd2b2NEZWx0YScsICd2b2NBbHBoYScsJ3Rlc3QnLAogICAgICAgICAgICAgICAgICdzdXJ2ZWlsbGFuY2UnLCdtZWRpYW5fY292ZXJhZ2UnLCdQVUknKQpmYWN0b3JzID0gYyh2YXJfZmFjdG9ycywgY2F0X2ZhY3RvcnMpCgpwYXRpZW50X2NvdW50c18zMCA9IHJlYWRfZmVhdGhlcigicHJvY2Vzc2luZy9wYXRpZW50X2NvdW50c18zMC5hcnJvdyIpCnBhdGllbnRfY291bnRzXzMwJHNleCA9IGRyb3BsZXZlbHMocGF0aWVudF9jb3VudHNfMzAkc2V4KQp0YWJsZTEgPC0gQ3JlYXRlVGFibGVPbmUoZmFjdG9ycywgcGF0aWVudF9jb3VudHNfMzAsIHN0cmF0YSA9IGMoImFkbWl0dGVkX2hvc3BpdGFsIiksIGFkZE92ZXJhbGwgPSBUKSAjJT4lIAogICAgICAgICAgICAgICAgICAgICAgICAgICAjZmlsdGVyKGNvbGxlY3Rpb25fZGF0ZSA+PSAiMjAyMS0wNy0wMSIpLCBzdHJhdGEgPSBjKCJhZG1pdHRlZF9ob3NwaXRhbCIpKQoKeCA9IHByaW50KHRhYmxlMSwgbm9ubm9ybWFsID0gYygnbl92YXInKSwgY3JhbVZhcnMgPSAic2V4IiwgcXVvdGUgPSBGQUxTRSwgbm9TcGFjZXMgPSBUKQp3cml0ZS5jc3YoeCwgZmlsZSA9ICJnZ3NhdmUvVGFibGUxX2J5X2FkbWl0dGVkX2FsbGRhdGVzLmNzdiIpCgpgYGAKCmBgYHtyfQp0YWJsZTEgPC0gQ3JlYXRlVGFibGVPbmUoZmFjdG9ycywgcGF0aWVudF9jb3VudHNfMzAgJT4lIGZpbHRlcihjb2xsZWN0aW9uX2RhdGUgPj0gIjIwMjEtMDctMDEiKSwKICAgIHN0cmF0YSA9IGMoImFkbWl0dGVkX2hvc3BpdGFsIiksIGFkZE92ZXJhbGwgPSBUKQoKeCA9IHByaW50KHRhYmxlMSwgbm9ubm9ybWFsID0gYygnbl92YXInKSwgY3JhbVZhcnMgPSAic2V4IiwgcXVvdGUgPSBGQUxTRSwgbm9TcGFjZXMgPSBUKQp3cml0ZS5jc3YoeCwgZmlsZSA9ICJnZ3NhdmUvVGFibGUxX2J5X2FkbWl0dGVkX0p1bHlPbndhcmRzLmNzdiIpCgpgYGAKCg==</div>
 
 
 

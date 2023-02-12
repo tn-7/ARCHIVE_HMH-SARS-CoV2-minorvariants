@@ -4,24 +4,29 @@
 # This file will load all the packages, common functions & small variables 
 # needed for the startup of each Rmd Notebook.
 
+clear_env = function(){
+  rm(list = ls(all.names = TRUE))
+  pacman::p_unload(pacman::p_loaded(), character.only = TRUE)
+}
 
-libraries = c("tidyverse", "cowplot", "pROC", "epitools", "glmnet", "nlme", 
-              "ggforce", "gggenes", "viridis", "GLMMadaptive",
+clear_env()
+
+libraries = c("tidyverse", "cowplot", "glmnet", 
+              "ggforce", "gggenes", "viridis",
              "ggpubr", "data.table", "ggrepel", "Biostrings", "ggpubr", 
-             "pheatmap", "vegan", "sjPlot", "sjlabelled", "sjmisc",
-             "broom", "ggsci", "ggExtra");
+             "pheatmap", "ggsci", "ggExtra", "lubridate", "scales",
+             "magrittr", "arrow","tableone", "broom");
 
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(char=libraries)
+
+
 
 # if (!require("BiocManager", quietly = TRUE))
 #   install.packages("BiocManager")
 # 
 # BiocManager::install("Biostrings")
 
-
-invisible(suppressPackageStartupMessages(lapply(libraries, require, character.only = TRUE)));
-options(dplyr.summarise.inform = FALSE)
 
 replace_na = tidyr::replace_na
 plot_grid = cowplot::plot_grid
@@ -44,9 +49,6 @@ dup65.66<-c("MCoV-55544_S733", "MCoV-55545_S734", "MCoV-55546_S735",
           	"MCoV-55562_S751", "MCoV-55563_S752", "MCoV-55564_S753", 
           	"MCoV-55565_S754", "MCoV-55566_S755", "MCoV-55567_S756")
 
-runs_to_drop = c("Run_20", "Run_89", "Run_21", "Run_58", "Run_76", "Run_71", 
-                 "Run_75", "Run_86", "Run_74", "Run_70", "Run_78", "Run_62", 
-                 "Run_13", "Run_85", "Run_65", "Run_34", "Run_87", "Run_11", 
-                 "Run_83", "Run_16", "Run_77", "Run_81")
+runs_to_drop = readRDS("processing/runs_to_drop.rds")
 
 select = dplyr::select

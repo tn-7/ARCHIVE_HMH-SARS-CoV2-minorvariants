@@ -5,39 +5,8 @@ output: html_notebook
 
 ```{r, fig.width = 2, fig.height = 2.5}
 source("./scripts/startup.R")
-source("./scripts/load_data.R")
-library(magrittr)
 
-  
-gene_counts = patient_var_30 %>% #left_join(immunocompromised) %>%
-  #filter(admitted_hospital == 1) %>%
-  group_by(MCoVNumber, gene) %>% 
-  summarize(g_var = n()) %>% group_by(MCoVNumber) %>% 
-  mutate(n_var = sum(g_var)) %>% 
-  select(!n_var) %>% filter(gene!="") %>%
-  pivot_wider(names_from = "gene", values_from = g_var, values_fill = 0)
-
-genes = patient_var %>% pull(gene) %>% unique
-
-patient_counts_uni_tmp = fread("processing/patient_counts_for_modeling.txt", data.table = F)
-exclude = c("lineage", "MCoVNumber" , "COLLECTION_DT" , "run",
-            "filename", "fraction_100x_coverage", "fraction_200x_coverage",
-            "fraction_500x_coverage", "n", "mcov_id",
-            "run_group", "RECEIVE_DT","VERIFIED_DT", "ordinal_counts")
-
-  
-include = colnames(patient_counts_uni_tmp) %>% as.data.frame %>% 
-  filter(!. %in% exclude) %>% filter(str_detect(.,'__')) %>% pull(.)
-meta = patient_counts_uni_tmp %>% select(c("MCoVNumber", include,"n_var")) %>%
-  select(!contains("0")) %>%
-  select(!contains("FALSE")) %>%
-  select(!contains("high_counts")) %>% #filter(n_var <= 30) %>%
-  select(!contains("disease"))
-
-gene_counts_meta = gene_counts %>% left_join(meta)
-gene_counts_meta_tmp = gene_counts_meta
-y = gene_counts_meta_tmp %>% ungroup %>% select(one_of(genes)) #%>% as.matrix
-
+patient_var_30 = read_feather("processing/patient_var_30.arrow")
 
 enrichment = function(y, genes) {
   genes = genes[genes != ""]
@@ -73,14 +42,6 @@ enrichment = function(y, genes) {
   out[out$p.value > 0.0001,] %<>% mutate(enriched = FALSE)
   return(out)
 }
-out = enrichment(y, genes)
-
-out %>% ggplot(aes(y = prop, x = gene, fill = enriched)) + 
-  #geom_bar(stat = "identity") + 
-  geom_errorbar(aes(x = gene, ymin = log2(conf.low/prop), ymax = log2(conf.high/prop))) +
-  theme_pubr() + coord_flip() + geom_hline(yintercept = 0, linetype = "dashed") +
-  ylab("log2FC (observed / expected_counts)")
-# color based on enriched or negative
 ```
 
 ```{r}
@@ -94,8 +55,20 @@ unique_gene_counts = patient_var_30 %>% unite(col = "spectra_mutation",
   summarize(g_var = n()) %>% filter(gene != "") %>%
   pivot_wider(names_from = "gene", values_from = g_var, values_fill = 0)
 
-unique_out = enrichment(unique_gene_counts, genes) %>% mutate(mutation = "unique")
-unique_all = rbind(out %>% mutate(mutation = "all"), unique_out)
+all_gene_counts = patient_var_30 %>% unite(col = "spectra_mutation", 
+                                            major, ntpos, minor, remove = FALSE) %>% 
+  select(gene, major, minor, spectra_mutation) %>% 
+  group_by(gene) %>% 
+  summarize(g_var = n()) %>% filter(gene != "") %>%
+  pivot_wider(names_from = "gene", values_from = g_var, values_fill = 0)
+
+genes <- fread("ntpos_gene_update.csv", data.table = F)
+
+
+unique_out = enrichment(unique_gene_counts, colnames(unique_gene_counts)) %>% mutate(mutation = "unique")
+all_out = enrichment(all_gene_counts, colnames(all_gene_counts)) %>% mutate(mutation = "unique")
+
+unique_all = rbind(all_out %>% mutate(mutation = "all"), unique_out)
 
 unique_all_enrichment_plot = unique_all %>% ggplot(aes(y = prop, x = gene, color = mutation)) + 
   geom_errorbar(aes(x = gene, ymin = log2(conf.low/prop), 
@@ -106,7 +79,7 @@ unique_all_enrichment_plot = unique_all %>% ggplot(aes(y = prop, x = gene, color
 
 unique_all_enrichment_plot
 
-#ggsave("ggsave/unique_all_enrichment_plot.pdf", unique_all_enrichment_plot, height = 4, width = 3.5)
+ggsave("ggsave/unique_all_enrichment_plot.pdf", unique_all_enrichment_plot, height = 4, width = 3.5)
 
 ```
 
@@ -126,7 +99,7 @@ gene_enrichment_for_plot = function(filtered_patient_var,
   summarize(g_var = n()) %>% filter(gene != "") %>%
   pivot_wider(names_from = "gene", values_from = g_var, values_fill = 0)
   
-  unique_out_admitted = enrichment(unique_gene_counts_admitted, genes) %>% 
+  unique_out_admitted = enrichment(unique_gene_counts_admitted, colnames(unique_gene_counts_admitted)) %>% 
     mutate(mutation = label)
   
   return(unique_out_admitted)
@@ -178,30 +151,30 @@ ggsave("ggsave/differential_genes_admitted_hospital.pdf", combined_all_unique_en
 ```{r}
 # ALL COUNTS
 out_admitted = gene_enrichment_for_plot(patient_var_30  %>% 
-                                          filter(collection_date>="2021-07-01") %>%
+                                          #filter(collection_date>="2021-07-01") %>%
                                                  filter(vaccine_status == 1), 
                                                unique = FALSE, label = "vaccinated")
-out_outpatient = gene_enrichment_for_plot(patient_var_30 %>% filter(collection_date>="2021-07-01") %>%
+out_outpatient = gene_enrichment_for_plot(patient_var_30 %>% #filter(collection_date>="2021-07-01") %>%
                                                    filter(vaccine_status == 0),
-                                                 unique = FALSE, label = "unvacinated")
+                                                 unique = FALSE, label = "unvaccinated")
 all = rbind(out_admitted, out_outpatient)
 
 all_enrichment_plot = all %>% ggplot(aes(y = prop, x = gene, color = mutation)) + 
   geom_errorbar(aes(x = gene, ymin = log2(conf.low/prop), 
                     ymax = log2(conf.high/prop)), 
                 position=position_dodge(width=0.3)) + #scale_y_continuous(limits=c(-2, 2.5)) +
-  theme_minimal() + ggtitle(paste0("After July 2021: All counts")) + theme(legend.position = "top") + coord_flip() + geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_minimal() + ggtitle(paste0("All counts")) + theme(legend.position = "top") + coord_flip() + geom_hline(yintercept = 0, linetype = "dashed") +
   ylab("log2FC (observed / expected_counts)")
 
 # UNIQUE COUNTS
 unique_out_admitted = gene_enrichment_for_plot(patient_var_30 %>% 
-                                                 filter(collection_date>="2021-07-01") %>%
+                                                 #filter(collection_date>="2021-07-01") %>%
                                                  filter(vaccine_status == 1), 
                                                unique = TRUE, label = "vaccinated")
 unique_out_outpatient = gene_enrichment_for_plot(patient_var_30 %>% 
-                                                   filter(collection_date>="2021-07-01") %>%
+                                                   #filter(collection_date>="2021-07-01") %>%
                                                    filter(vaccine_status == 0),
-                                                 unique = TRUE, label = "unvacinated")
+                                                 unique = TRUE, label = "unvaccinated")
 unique_all = rbind(unique_out_admitted, unique_out_outpatient)
 
 unique_all_enrichment_plot = unique_all %>% mutate(gene = fct_relevel(gene, levels(all$gene))) %>%

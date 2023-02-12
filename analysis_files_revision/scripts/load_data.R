@@ -84,7 +84,10 @@ for (i in 1:nrow(primers)){
   primer_positions_v4.1 <- c(primer_positions_v4.1, primers[i,]$start:primers[i,]$end)
 }
 
-primer_positions_all <- c(primer_positions_v3, primer_positions_v4, primer_positions_v4.1) %>% unique()
+problem_sites = fread("problematic_sites_sarsCov2_v8-20211027.vcf", skip = 88)
+
+primer_positions_all <- c(primer_positions_v3, primer_positions_v4, primer_positions_v4.1,
+                          problem_sites$POS) %>% unique()
 
 all_replicates_table_filt <- fread("replicated_samples.csv", data.table=F) %>% 
   filter(MCoVNumber %in% samples_n_var$MCoVNumber)
@@ -140,6 +143,7 @@ sample_duration =  fread("timestamp_sample_RNA_extraction_processing.csv",
   mutate(MCoVNumber=str_remove(mcov_id, "-"))
 
 patient_data[factor_columns]<-lapply(patient_data[factor_columns], factor)
+
 patient_var_tmp = fread("processing/var_aa_ct.txt", data.table = F) %>% 
   left_join(patient_data) %>% mutate(high_counts = n_var > 14) %>% 
  select(-pui) %>% left_join(sample_type) %>% 

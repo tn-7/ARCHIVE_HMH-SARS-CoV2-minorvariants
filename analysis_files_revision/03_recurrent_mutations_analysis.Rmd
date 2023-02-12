@@ -6,7 +6,6 @@ output: html_notebook
 What are the most frequent minor variants in the high-confidence samples?
 ```{r}
 source("./scripts/startup.R")
-source("./scripts/load_data.R")
 
 consensus_sites_lowct<-fread("consensus_minor_changes_20220713.csv", data.table = F) %>% 
   mutate(MCoVNumber = mcov_reformat(name)) %>% filter(MCoVNumber %in% patient_var_30$MCoVNumber) %>% 
@@ -18,7 +17,7 @@ consensus_sites_lowct
 
 ```{r}
 # Across genome
-
+patient_counts_30 = read_feather("processing/patient_counts_30.arrow")
 consensus = consensus_sites_lowct %>% select(MCoVNumber, ntpos) %>% 
   group_by(ntpos) %>%
   tally(ntpos) %>% 
@@ -64,6 +63,15 @@ minor_prevalence_across_genome_unlog_labeled =
                       left_join(minor_consensus_plotdata %>% select(ntpos, consensus)) %>% unique,
                     aes(x = ntpos, y = n, label = ntpos, color = consensus))
 
+gene_limits
+
+gene_arrows<-ggplot(gene_limits, aes(xmin = start, xmax = end, y=molecule, label = gene_id)) +
+  geom_gene_arrow(arrowhead_height = unit(3, "mm"), arrowhead_width = unit(1, "mm")) + geom_gene_label() + geom_segment(aes(x=266,y=1.5,xend=13468,yend=1.5), size=0.2) + xlim(0,29903) +
+  annotate("text", label="ORF1a", x=5000, y=1.41, size=3) + geom_segment(aes(x=13468,y=1.4,xend=21555,yend=1.4), size=0.2) + annotate("text", label="ORF1b", x=18000, y=1.31, size=3) +
+  theme_genes() + ylab(NULL) + xlab(NULL) 
+
+
+
 ((
   genome_fig_unlog<-plot_grid(gene_arrows, minor_prevalence_across_genome_unlog_labeled, nrow=2, rel_heights=c(0.25,1), axis="lr", align="hv")
 ))
@@ -94,10 +102,7 @@ minor_prevalence_across_genome_unlog_labeled =
 # prevalence_across_genome
 
 gene_limits<-genes %>% group_by(gene_id) %>% summarise(start=min(ntpos), end=max(ntpos)) %>% filter(gene_id!="") %>% mutate(molecule="")
-gene_arrows<-ggplot(gene_limits, aes(xmin = start, xmax = end, y=molecule, label = gene_id)) +
-  geom_gene_arrow(arrowhead_height = unit(3, "mm"), arrowhead_width = unit(1, "mm")) + geom_gene_label() + geom_segment(aes(x=266,y=1.5,xend=13468,yend=1.5), size=0.2) + xlim(0,29903) +
-  annotate("text", label="ORF1a", x=5000, y=1.41, size=3) + geom_segment(aes(x=13468,y=1.4,xend=21555,yend=1.4), size=0.2) + annotate("text", label="ORF1b", x=18000, y=1.31, size=3) +
-  theme_genes() + ylab(NULL) + xlab(NULL) 
+
 
 ((
   genome_fig<-plot_grid(gene_arrows, minor_prevalence_across_genome, nrow=2, rel_heights=c(0.25,1), axis="lr", align="hv")
