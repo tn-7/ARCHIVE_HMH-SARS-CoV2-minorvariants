@@ -15,7 +15,8 @@ libraries = c("tidyverse", "cowplot", "glmnet",
               "ggforce", "gggenes", "viridis",
              "ggpubr", "data.table", "ggrepel", "Biostrings", "ggpubr", 
              "pheatmap", "ggsci", "ggExtra", "lubridate", "scales",
-             "magrittr", "arrow","tableone", "broom");
+             "magrittr", "arrow","tableone", "broom", "glmmTMB", "foreach",
+             "doParallel", "ggforestplot");
 
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(char=libraries)

@@ -253,22 +253,22 @@ genes$gene_id <- factor(genes$gene_id, levels = gene_names)
 #file was already filtered to sites with minimum 100 reads depth and A,C,T,G minor variant present and binomial significance check passed. Further filtering:
 
 
-# depth_at_site<-100
-# minor_frequency<-0.01
-# total_minor_reads<-50
-# #
-# minor_variant_sites_threshold <- fread("minor_sites_100x_all_20220507.csv") %>% 
-#   mutate(MCoVNumber=regmatches(name, 
-#                                regexpr("[M,R,S,O]CoV.[0-9]+", name)) %>% 
-#            str_remove("-") %>% str_remove("_")) %>% 
-#   filter(MCoVNumber %in% mcov_samples_filtered$MCoVNumber) %>%
-#   filter(totalcount>=depth_at_site) %>%
-#   filter(!ntpos %in% c(1:265)) %>% filter(!ntpos>29674) %>% #don't include 5' and 3' UTR
-#   filter(!ntpos %in% primer_positions_all) %>% #don't include primer binding sites
-#   filter(major %in% c("A","C","T","G")) %>% #don't want minor variants at consensus deletion sites
-#   filter(minorfreq>=minor_frequency) %>%
-#   filter(minorfreq*totalcount>=total_minor_reads) 
-# write_feather(minor_variant_sites_threshold, 'processing/minor_variants_filtered_100x0.01_50.arrow')
+depth_at_site<-100
+minor_frequency<-0.01
+total_minor_reads<-50
+
+minor_variant_sites_threshold <- fread("minor_sites_100x_all_20220507.csv") %>%
+  mutate(MCoVNumber=regmatches(name,
+                               regexpr("[M,R,S,O]CoV.[0-9]+", name)) %>%
+           str_remove("-") %>% str_remove("_")) %>%
+  filter(MCoVNumber %in% mcov_samples_filtered$MCoVNumber) %>%
+  filter(totalcount>=depth_at_site) %>%
+  filter(!ntpos %in% c(1:265)) %>% filter(!ntpos>29674) %>% #don't include 5' and 3' UTR
+  filter(!ntpos %in% primer_positions_all) %>% #don't include primer binding sites
+  filter(major %in% c("A","C","T","G")) %>% #don't want minor variants at consensus deletion sites
+  filter(minorfreq>=minor_frequency) %>%
+  filter(minorfreq*totalcount>=total_minor_reads)
+write_feather(minor_variant_sites_threshold, 'processing/minor_variants_filtered_100x0.01_50.arrow')
 ```
 
 
@@ -502,7 +502,7 @@ lineages_figure <- mcov_samples_filtered %>%
 #SUPP FIG 2
 lineages_figure
 saveRDS(lineages_figure, "ggsave/lineages_figure.rds")
-ggsave("ggsave/lineages_figure.pdf", plot = lineages_figure, height = 4, width = 5)
+#ggsave("ggsave/lineages_figure.pdf", plot = lineages_figure, height = 4, width = 5)
 ```
 
 ```{r}

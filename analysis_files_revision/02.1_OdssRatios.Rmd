@@ -60,7 +60,7 @@ scale_scan_factors = function(patient_var_tmp, scan_factors) {
   return(p_sub_scaled)
 }
 
-
+patient_var_tmp = read_feather("processing/patient_var_tmp.arrow")
 scan_factors_trim = scan_factors[!scan_factors %in% c("transplant_patient", "hiv")] 
 p_sub_scaled = scale_scan_factors(
   patient_var_tmp %>% filter(n_var < 30 & CT < 26), 
@@ -130,7 +130,7 @@ feature_n_plot = ggarrange(undated_feature_n_plot + ggtitle("12/2020 - 11/2021")
           julyonwards_feature_n_plot + ggtitle("07/2021 - 11/2021"), align = "h",
           labels = list("A","B"))
 feature_n_plot
-#ggsave("ggsave/feature_n_plot.pdf", feature_n_plot, width = 16, height = 8)
+ggsave("ggsave/feature_n_plot.pdf", feature_n_plot, width = 16, height = 8)
 ```
 
 # PLOTTING COMMANDS PER CT
@@ -138,100 +138,104 @@ feature_n_plot
 EXPLORATION OF THE ADMITTED
 
 ```{r}
+patient_counts_30 = read_feather("processing/patient_counts_30.arrow")
 patient_counts_30 = patient_counts_30 %>% #filter(collection_date >="2021-07-01") %>%
   mutate(admitted_hospital = as.factor(admitted_hospital))
 
-plot_admitted = patient_counts_30 %>% group_by(admitted_hospital) %>% 
-  ggplot(aes(x = INSTRUMENT_RESULT, y = n_var, color = admitted_hospital)) + 
-  geom_point(shape = "") +
-        geom_density_2d(aes(color = admitted_hospital)) + 
-  stat_cor(method = "spearman", cor.coef.name = "rho") +
-    geom_smooth(se=TRUE) + theme_pubr() + scale_y_continuous(trans="log1p", 
-                                                             breaks = c(0,1,2,5,10,15,20,25,30)) +
-  scale_x_continuous(limits = c(10,26))
+ct_date_plot = function(patient_counts_30, admitted_hospital = "admitted_hospital") {
+  plot_admitted = patient_counts_30 %>% 
+    ggplot(aes(x = INSTRUMENT_RESULT, y = n_var, color = !!sym(admitted_hospital))) + 
+    geom_point(shape = "") +
+          geom_density_2d(aes(color = !!sym(admitted_hospital))) + 
+    stat_cor(method = "spearman", cor.coef.name = "rho") +
+      geom_smooth(se=TRUE) + theme_pubr() + scale_y_continuous(trans="log1p", 
+        breaks = c(0,1,2,5,10,15,20,25,30)) +
+    scale_x_continuous(limits = c(10,26))
   plot_admitted_marginal_by_ct = ggMarginal(plot_admitted, type = "violin", 
                                             draw_quantiles = c(0,0.25,0.5, 0.75),
              groupColour = TRUE, groupFill = TRUE)
 
-
 # By Date now:
-plot_admitted_date = patient_counts_30 %>% group_by(admitted_hospital) %>% 
-  ggplot(aes(x = collection_date, y = n_var, color = admitted_hospital)) + 
-  geom_point(shape = "") +
-        geom_density_2d(aes(color = admitted_hospital)) + 
-  stat_cor(method = "spearman", cor.coef.name = "rho") +
-    geom_smooth(se=TRUE) + theme_pubr() + scale_y_continuous(trans="log1p", 
-                                                             breaks = c(0,1,2,5,10,15,20,25,30))
-plot_admitted_date_marginal = ggMarginal(plot_admitted_date,  groupColour = TRUE, groupFill = TRUE)
+  plot_admitted_date = patient_counts_30 %>% group_by(admitted_hospital) %>% 
+    ggplot(aes(x = collection_date, y = n_var, color = !!sym(admitted_hospital))) + 
+    geom_point(shape = "") +
+          geom_density_2d(aes(color = !!sym(admitted_hospital))) + 
+    stat_cor(method = "spearman", cor.coef.name = "rho") +
+      geom_smooth(se = TRUE) + theme_pubr() + scale_y_continuous(trans="log1p", 
+                                                               breaks = c(0,1,2,5,10,15,20,25,30))
+  plot_admitted_date_marginal = ggMarginal(plot_admitted_date,  groupColour = TRUE, groupFill = TRUE)
+  
+  plot_admitted_marginal_combined = ggarrange(plot_admitted_marginal_by_ct, 
+                                              plot_admitted_date_marginal, align = "h")
+}
 
-plot_admitted_marginal_combined = ggarrange(plot_admitted_marginal_by_ct, 
-                                            plot_admitted_date_marginal, align = "h")
-plot_admitted_marginal_combined
-#ggsave("ggsave/plot_admitted_marginal_combined.pdf", 
-#       plot_admitted_marginal_combined, height = 4.5, width = 9)
+plot_admitted_marginal_combined = ct_date_plot(patient_counts_30, "admitted_hospital")
+
+ggsave("ggsave/plot_admitted_marginal_combined.pdf", 
+       plot_admitted_marginal_combined, height = 4.5, width = 9)
 ```
-
-Admitted by Date
-```{r}
-
-
-```
-
-
-
-
-
-
 
 OTHER FACTORS
 
 
 ```{r}
-# VACCINATION GROUPS WITH CONTROL OVER THE TIME & OUTPATIENT STATUS
+# VACCINATION GROUPS HISTOGRAM
 vaccine_by_date_hist = patient_counts_30 %>% select(collection_month, vaccine_status, admitted_hospital) %>% 
   filter(vaccine_status == 1) %>% ggplot(aes(x = collection_month)) + 
   geom_histogram(stat="count") + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         plot.background = element_rect(colour = "black", fill=NA, linewidth =2)) +
   ylab("vaccine count")
+vaccine_by_date_hist
 
 ggsave("ggsave/vaccine_by_date_hist.pdf", vaccine_by_date_hist, height = 2, width = 2)
 
+# ADMITTED GROUPS HISTOGRAM
 patient_counts_30 %>% select(collection_month, vaccine_status, admitted_hospital) %>%
   filter(admitted_hospital == 1) %>% ggplot(aes(x = collection_month)) + 
   geom_histogram(stat="count")
 
+# Load in the TOTAL HISTOGRAM
+lineages_histogram = readRDS("ggsave/lineages_figure.rds")
+# combine the histograms
+n_vax_admit = patient_counts_30 %>% select(COLLECTION_DT, vaccine_status, admitted_hospital) %>%
+   mutate(month = floor_date(COLLECTION_DT, "month")) %>% group_by(month) %>%
+  summarize(vaccinated = sum(as.numeric(as.character(vaccine_status))), 
+            hospitalized = sum(as.numeric(as.character(admitted_hospital)))) %>%
+   pivot_longer(!month, names_to = "trends", values_to = "count")
+
+lineages_histogram_vax_hosp = lineages_histogram +  
+  geom_line(data = n_vax_admit, aes(month, count, color = trends, linetype = trends)) +
+  scale_color_manual(values = c("grey10", "black")) + theme(legend.position = "right")
+# save the output
+ggsave("ggsave/lineages_histogram_vax_hosp.pdf", lineages_histogram_vax_hosp, height = 4, width = 4)
+```
 
 
-table(patient_counts_30 %>% filter(collection_date>="2021-07-01") %>% select(admitted_hospital,vaccine_status))
-
-plot_vaccinated = patient_counts_30 %>%
-  filter(collection_date>="2021-07-01") %>% filter(admitted_hospital == 1) %>% 
-  group_by(vaccine_status) %>% 
-  ggplot(aes(x = INSTRUMENT_RESULT, y = n_var, color = vaccine_status)) + 
-  geom_point(shape = "") +
-        geom_density_2d(aes(color = vaccine_status)) + stat_cor(method = "spearman", cor.coef.name = "rho") +
-    geom_smooth(se=TRUE) + theme_pubr() + scale_y_continuous(trans="log1p", 
-                                                             breaks = c(0,1,2,5,10,15,20,25,30)) +
-    scale_x_continuous(limits = c(10,26))
-
-    plot_vaccinated_marginal_by_ct = ggMarginal(plot_vaccinated, type = "boxplot", 
-                                            draw_quantiles = c(0,0.25,0.5, 0.75),
-             groupColour = TRUE, groupFill = TRUE)
-    
+```{r}
+# CT VACCINATED
+plot_vaccinated_marginal_by_ct = ct_date_plot(patient_counts_30 %>%
+                                                filter(collection_date >="2021-07-01" & admitted_hospital == 1), "vaccine_status")
 plot_vaccinated_marginal_by_ct
 
-#ggsave("ggsave/plot_vaccinated_marginal_by_ct.pdf", plot_vaccinated_marginal_by_ct, height = 5, width = 5)
+ggsave("ggsave/plot_vaccinated_marginal_by_ct.pdf", plot_vaccinated_marginal_by_ct, height = 5, width = 5)
 ```
+```{r}
+# cancer
+plot_cancer_marginal_by_ct = ct_date_plot(patient_counts_30 %>%
+                                                filter(collection_date <="2021-07-01"), "cancer")
+plot_cancer_marginal_by_ct
+
+test = ct_date_plot(patient_counts_30, "cancer")
+test
+
+```
+
+
+
 
 ```{r}
 # VACCINATION GROUPS WITH CONTROL OVER THE TIME & OUTPATIENT STATUS
-patient_counts_30 %>% select(collection_month, vaccine_status) %>% filter(vaccine_status == 1) %>% ggplot(aes(x = collection_month)) + geom_histogram(stat="count")
-
-
-table(patient_counts_30 %>% #filter(collection_date>="2021-07-01") %>% 
-        select(admitted_hospital,mAb))
-
 plot_vaccinated = patient_counts_30 %>%
   filter(collection_date>="2021-07-01") %>% 
   filter(admitted_hospital == 1) %>% 
@@ -249,7 +253,7 @@ plot_vaccinated = patient_counts_30 %>%
     
 plot_vaccinated_marginal_by_ct
 
-##ggsave("ggsave/plot_mAb_marginal_by_ct.pdf", plot_vaccinated_marginal_by_ct, height = 5, width = 5)
+#ggsave("ggsave/plot_mAb_marginal_by_ct.pdf", plot_vaccinated_marginal_by_ct, height = 5, width = 5)
 ```
 
 
