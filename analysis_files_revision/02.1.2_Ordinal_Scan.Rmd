@@ -22,6 +22,7 @@ scale_scan_factors = function(patient_counts_30, scan_factors_trim) {
 
   p_sub_scaled = p_sub %>% select(one_of(scan_factors_trim)) %>% 
     mutate_if(is.numeric, normalize) %>% # scale will z scale it, instead of the normalize fx above which is min max
+    mutate_if(is.character, as.factor) %>%
     cbind(p_sub %>% select(!one_of(scan_factors_trim)))
   return(p_sub_scaled)
 }
@@ -85,6 +86,47 @@ scale_and_run_binom = function(patient_counts_30, scan_factors_trim) {
   
   return(model_coef_n)
 }
+
+forest_tn = function(df_input, model_count = 2, alt = F) {
+  df_input = df_input %>% filter(factor_prop > 0.05 & factor_prop < 0.95)
+  order = df_input %>% group_by(name) %>% summarize(mean_estimate = mean(Estimate)) %>% 
+  arrange(mean_estimate) %>% pull(name)
+  
+  df_input$name = factor(df_input$name, levels = order)
+  both_pass = df_input %>% group_by(name) %>% 
+  summarize(both_pass = (sum(pval < 0.05) > (model_count - 1))) %>% arrange(name, order) %>%
+  mutate(both_pass = ifelse(both_pass, "black", "grey")) %>%
+  pull(both_pass)
+
+  forest_binom = df_input  %>%
+    mutate(name = factor(name, levels = order)) %>%
+    ggplot(aes(x = (Estimate), y = name)) +
+    geom_vline(xintercept = 0, linetype = "solid") 
+  
+  if (alt == T) {
+    forest_binom =forest_binom + geom_effect(aes(xmin = (LL), xmax = (UL), 
+                    color = Source, filled = pval < 0.05)) + 
+    theme_forest() + theme(legend.position = "right", 
+                           axis.text.x = element_text(angle = 90, 
+                                                      vjust = 0.5, hjust=1)) + 
+    geom_stripes() +
+    scale_x_continuous(sec.axis = sec_axis(~ exp(.), breaks = c(seq(0.4,1.4,0.2), 2))) + #,
+    xlab("exp(Coefficient)")
+  } else {
+    
+    forest_binom = forest_binom + geom_effect(aes(xmin = (LL), xmax = (UL), 
+                    color = model_type, filled = pval < 0.05)) + 
+    theme_forest() + theme(legend.position = "top", 
+                           axis.text.x = element_text(angle = 90, 
+                                                      vjust = 0.5, hjust=1),
+                           axis.text.y = element_text(color = both_pass)) + 
+    geom_stripes() +
+    scale_x_continuous(sec.axis = sec_axis(~ exp(.), breaks = c(seq(0.4,1.4,0.2), 2))) + 
+    xlab("exp(Coefficient)")
+  }
+  return(forest_binom)
+}
+
 ```
 
 Run functions for negative binomial and binomial regression
@@ -135,51 +177,7 @@ write_feather(all_df_binom_nb, "processing/temp_all_df_binom_nb.arrow")
 # Plot the forest plots
 ```{r}
 all_df_binom_nb = read_feather("processing/temp_all_df_binom_nb.arrow")
-# order the y axis
-
 df_input = all_df_binom_nb %>% filter(Source == "all_data") %>% select(-Source)
-
-forest_tn = function(df_input, model_count = 2, alt = F) {
-  df_input = df_input %>% filter(factor_prop > 0.05 & factor_prop < 0.95)
-  order = df_input %>% group_by(name) %>% summarize(mean_estimate = mean(Estimate)) %>% 
-  arrange(mean_estimate) %>% pull(name)
-  
-  df_input$name = factor(df_input$name, levels = order)
-  both_pass = df_input %>% group_by(name) %>% 
-  summarize(both_pass = (sum(pval < 0.05) > (model_count - 1))) %>% arrange(name, order) %>%
-  mutate(both_pass = ifelse(both_pass, "black", "grey")) %>%
-  pull(both_pass)
-
-  forest_binom = df_input  %>%
-    mutate(name = factor(name, levels = order)) %>%
-    ggplot(aes(x = (Estimate), y = name)) +
-    geom_vline(xintercept = 0, linetype = "solid") 
-  
-  if (alt == T) {
-    forest_binom =forest_binom + geom_effect(aes(xmin = (LL), xmax = (UL), 
-                    color = Source, filled = pval < 0.05)) + 
-    theme_forest() + theme(legend.position = "right", 
-                           axis.text.x = element_text(angle = 90, 
-                                                      vjust = 0.5, hjust=1)) + 
-    geom_stripes() +
-    scale_x_continuous(sec.axis = sec_axis(~ exp(.), breaks = c(seq(0.4,1.4,0.2), 2))) + #,
-    xlab("exp(Coefficient)")
-  } else {
-    
-    forest_binom = forest_binom + geom_effect(aes(xmin = (LL), xmax = (UL), 
-                    color = model_type, filled = pval < 0.05)) + 
-    theme_forest() + theme(legend.position = "top", 
-                           axis.text.x = element_text(angle = 90, 
-                                                      vjust = 0.5, hjust=1),
-                           axis.text.y = element_text(color = both_pass)) + 
-    geom_stripes() +
-    scale_x_continuous(sec.axis = sec_axis(~ exp(.), breaks = c(seq(0.4,1.4,0.2), 2))) + 
-    xlab("exp(Coefficient)")
-  }
-  return(forest_binom)
-}
-
-
 all_forest = forest_tn(all_df_binom_nb %>% filter(Source == "all_data"))
 all_forest
 
@@ -195,9 +193,6 @@ July_forest = ggarrange(before_July_forest,
 July_forest
 
 ggsave("ggsave/July_forest.pdf", July_forest, width = 10, height = 4)
-
-# patient_counts_30 %>% filter(collection_date >= "2021-07-01") %>% 
-#   summarize(quant = quantile(.$n_var, probs = 0.8))
 ```
 # 
 ```{r}
@@ -231,29 +226,22 @@ patient_counts = read_feather("processing/patient_counts.arrow")
 initial_scan_nocount = scale_and_run_binom(patient_counts %>% 
                                filter(n_var > 30), 
                                scan_factors_trim)
-forest_tn(initial_scan_nocount %>% filter(model_type == "nbinom2"), model_count = 1)
+#forest_tn(initial_scan_nocount %>% filter(model_type == "nbinom2"), model_count = 1)
 
-# forest_nocount = forestplot(initial_scan_nocount, 
-#                                 rowname, estimate, se, 
-#                            pvalue, group) + 
-#   scale_color_manual(values = rev(c("lightblue", "salmon", "black"))) +
-#   scale_y_discrete(limits=rev) + 
-#   theme(axis.text.x = element_text(angle = 90, 
-#                                    vjust = 0.5, hjust=1)) + 
-#   theme(legend.position = "top", legend.direction = "vertical",
-#         legend.justification = "left")
 
 # 500x98%
+patient_counts_30 = read_feather("processing/patient_counts_30.arrow")
 initial_scan_500x98 = scale_and_run_binom(patient_counts_30 %>% filter(fraction_1000x_coverage > .98),
                                           scan_factors_trim)
 
-forest_tn(initial_scan_500x98 %>% filter(model_type == "binomial"), model_count = 1)
+#forest_tn(initial_scan_500x98 %>% filter(model_type == "binomial"), model_count = 1)
 
 
 # CT < 18
-initial_scan_ct18 = scale_and_run_binom(patient_counts_30 %>% filter(INSTRUMENT_RESULT < 18),
+initial_scan_ct18 = scale_and_run_binom(patient_counts_30 %>% filter(INSTRUMENT_RESULT < 18) %>%
+                                          mutate(PUI = as.factor(PUI)),
                                         scan_factors_trim)
-forest_tn(initial_scan_ct18 %>% filter(model_type == "binomial"), model_count = 1)
+#forest_tn(initial_scan_ct18 %>% filter(model_type == "binomial"), model_count = 1)
 
 # No co-morbidity
 initial_scan_no_comorbid = scale_and_run_binom(patient_counts_30 %>% 
@@ -261,7 +249,7 @@ initial_scan_no_comorbid = scale_and_run_binom(patient_counts_30 %>%
              chronic_liver_disease == 0, chronic_kidney_disease == 0, cancer == 0,
              hypertension == 0, hiv == 0, transplant_patient == 0, surveillance == 0), scan_factors_trim)
 
-forest_tn(initial_scan_no_comorbid %>% filter(model_type == "binomial"), model_count = 1)
+#forest_tn(initial_scan_no_comorbid %>% filter(model_type == "binomial"), model_count = 1)
 
 
 dfnames = c("df_input", "initial_scan_nocount", "initial_scan_500x98", 

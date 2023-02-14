@@ -108,9 +108,9 @@ plot_feature_n = function(p_sub_scaled) {
   sum_n_OP = sum_n - sum_n_IP
   
   feature_stats = left_join(feature_stats_IP, feature_stats_OP)
-  
-  feature_n_plot = feature_stats %>% ggplot(aes(x=IP, y = OP, label = feature)) + 
-    geom_abline(slope =1, color = "red", linetype = "dashed") + 
+  slope = sum_n_OP/sum_n_IP
+  feature_n_plot = feature_stats %>% ggplot(aes(x = IP, y = OP, label = feature)) + 
+    geom_abline(slope = slope, color = "red", linetype = "dashed") + 
     geom_point() + geom_text_repel() +
     scale_y_continuous( breaks = seq(0,1500,100), limits = c(0,1400),
                        sec.axis = sec_axis(~ . / sum_n_OP, labels = scales::label_percent(),
@@ -170,6 +170,7 @@ ct_date_plot = function(patient_counts_30, admitted_hospital = "admitted_hospita
 }
 
 plot_admitted_marginal_combined = ct_date_plot(patient_counts_30, "admitted_hospital")
+plot_admitted_marginal_combined
 
 ggsave("ggsave/plot_admitted_marginal_combined.pdf", 
        plot_admitted_marginal_combined, height = 4.5, width = 9)

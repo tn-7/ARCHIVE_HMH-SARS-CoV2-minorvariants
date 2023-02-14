@@ -227,17 +227,15 @@ for (i in 1:nrow(primers)){
   primer_positions_v4<-c(primer_positions_v4, primers[i,]$start:primers[i,]$end)
 }
 
-primers = fread("V4.1.bed", sep="\t", header=FALSE, data.table=F) %>% 
-  select(start = V2, end = V3)
-primer_positions_v4.1 <- as.numeric()
-for (i in 1:nrow(primers)){
-  primer_positions_v4.1 <- c(primer_positions_v4.1, primers[i,]$start:primers[i,]$end)
-}
+problem_sites_global = fread("problematic_sites_sarsCov2_v8-20211027.vcf", skip = 88) %>%
+  filter(FILTER != "mask") %>%
+  filter(!grepl('single_src|nanopore', INFO)) %>% pull(POS)
+problem_sites_houston = fread("problematic_sites_sarsCov2_v8-20211027.vcf", skip = 88) %>%
+  filter(grepl('Houston', INFO)) %>% pull(POS)
+problem_sites = unique(c(problem_sites_global, problem_sites_houston))
 
-problem_sites = fread("problematic_sites_sarsCov2_v8-20211027.vcf", skip = 88)
-
-primer_positions_all <- c(primer_positions_v3, primer_positions_v4, primer_positions_v4.1,
-                          problem_sites$POS) %>% unique()
+primer_positions_all <- c(primer_positions_v3, primer_positions_v4, problem_sites) %>% unique() 
+# insert problem sites if necessary
 
 saveRDS(primer_positions_all, "primer_positions_all.rds")
 
@@ -253,22 +251,22 @@ genes$gene_id <- factor(genes$gene_id, levels = gene_names)
 #file was already filtered to sites with minimum 100 reads depth and A,C,T,G minor variant present and binomial significance check passed. Further filtering:
 
 
-depth_at_site<-100
-minor_frequency<-0.01
-total_minor_reads<-50
-
-minor_variant_sites_threshold <- fread("minor_sites_100x_all_20220507.csv") %>%
-  mutate(MCoVNumber=regmatches(name,
-                               regexpr("[M,R,S,O]CoV.[0-9]+", name)) %>%
-           str_remove("-") %>% str_remove("_")) %>%
-  filter(MCoVNumber %in% mcov_samples_filtered$MCoVNumber) %>%
-  filter(totalcount>=depth_at_site) %>%
-  filter(!ntpos %in% c(1:265)) %>% filter(!ntpos>29674) %>% #don't include 5' and 3' UTR
-  filter(!ntpos %in% primer_positions_all) %>% #don't include primer binding sites
-  filter(major %in% c("A","C","T","G")) %>% #don't want minor variants at consensus deletion sites
-  filter(minorfreq>=minor_frequency) %>%
-  filter(minorfreq*totalcount>=total_minor_reads)
-write_feather(minor_variant_sites_threshold, 'processing/minor_variants_filtered_100x0.01_50.arrow')
+# depth_at_site<-100
+# minor_frequency<-0.01
+# total_minor_reads<-50
+# 
+# minor_variant_sites_threshold <- fread("minor_sites_100x_all_20220507.csv") %>%
+#   mutate(MCoVNumber=regmatches(name,
+#                                regexpr("[M,R,S,O]CoV.[0-9]+", name)) %>%
+#            str_remove("-") %>% str_remove("_")) %>%
+#   filter(!ntpos %in% primer_positions_all) %>% #don't include primer binding sites
+#   filter(MCoVNumber %in% mcov_samples_filtered$MCoVNumber) %>%
+#   filter(totalcount>=depth_at_site) %>%
+#   filter(!ntpos %in% c(1:265)) %>% filter(!ntpos>29674) %>% #don't include 5' and 3' UTR
+#   filter(major %in% c("A","C","T","G")) %>% #don't want minor variants at consensus deletion sites
+#   filter(minorfreq>=minor_frequency) %>%
+#   filter(minorfreq*totalcount>=total_minor_reads)
+# write_feather(minor_variant_sites_threshold, 'processing/minor_variants_filtered_100x0.01_50.arrow')
 ```
 
 
@@ -276,7 +274,6 @@ write_feather(minor_variant_sites_threshold, 'processing/minor_variants_filtered
 ## Overall minor variant richness
 
 ```{r}
-source("./scripts/startup.R")
 minor_variant_sites_threshold <- read_feather('processing/minor_variants_filtered_100x0.01_50.arrow') 
 n_var <- minor_variant_sites_threshold %>% group_by(MCoVNumber) %>% tally() %>% arrange(desc(n)) #this tally doesn't include any samples with 0 variants, so need to join to original list
 samples_n_var <- mcov_samples_filtered %>% left_join(n_var) %>% 
@@ -502,7 +499,6 @@ lineages_figure <- mcov_samples_filtered %>%
 #SUPP FIG 2
 lineages_figure
 saveRDS(lineages_figure, "ggsave/lineages_figure.rds")
-#ggsave("ggsave/lineages_figure.pdf", plot = lineages_figure, height = 4, width = 5)
 ```
 
 ```{r}
