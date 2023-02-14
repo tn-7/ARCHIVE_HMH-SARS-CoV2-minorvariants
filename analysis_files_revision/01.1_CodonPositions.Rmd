@@ -19,7 +19,7 @@ source("./scripts/startup.R")
 
 
 ```{r}
-var = read_feather('processing/minor_variants_filtered_100x0.01_50.arrow')
+var = read_feather('processing/minor_variants_filtered_100x0.01_50.arrow') %>% as.data.frame
 samples_n_var = read_feather("processing/samples_n_var.arrow")
 
 # first iteration, just in small intervals
@@ -58,6 +58,7 @@ for (i in 1:nrow(gene_start_end)) {
     genes[assign_gene, "aapos"] = ceiling((genes$ntpos[assign_gene] - gene_start_end[i, "start"] + 1) / 3)
 }
 
+# reference
 aa = genes %>% group_by(gene_id, aapos) %>% 
   summarize(ref_codon = paste(refnt,collapse=","), ntpos_codonstart = min(ntpos)) %>% 
   separate(ref_codon, sep = ",", into = c("ref.1", "ref.2", "ref.3"), remove = F) %>% 
@@ -84,7 +85,7 @@ for (i in 1:3) {
             unite("tmp", minor_string[,i], sep = "") %>% select(tmp)
 }
 
-# translate the major and minor variants
+# pause: process the sample metadata for merge
 patient_data <- fread("sample_and_patient_data.csv",data.table=F) %>% 
   mutate(MCoVNumber=str_remove(mcov_id, "-")) %>% mutate(collection_date=as.Date(COLLECTION_DT, "%m/%d/%y")) %>% 
   mutate(collection_month=format(as.Date(collection_date), "%Y-%m")) %>%
@@ -123,6 +124,7 @@ sample_duration =  fread("timestamp_sample_RNA_extraction_processing.csv",
 
 patient_data[factor_columns]<-lapply(patient_data[factor_columns], factor)
 
+# translate the major and minor variants
 patient_var_tmp = var_aa %>% left_join(codon_translate %>% 
                                          select(majorcodon = ref_codon, tmp_sym = ref_sym)) %>% 
   mutate(majoraa = tmp_sym) %>% select(!tmp_sym) %>% 
