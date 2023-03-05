@@ -8,92 +8,297 @@ What are the most frequent minor variants in the high-confidence samples?
 source("./scripts/startup.R")
 
 patient_var_30 = read_feather("processing/patient_var_30.arrow")
+maf_histogram = patient_var_30 %>% ggplot(aes(minorfreq)) + geom_histogram(binwidth = 0.01) + theme_pubr()
+quantile(patient_var_30$minorfreq, probs = c(.25,.5,.75), na.rm = T)
+ggsave("ggsave/maf_histogram.pdf", maf_histogram, width = 3, height = 3)
 
-highly_shared_sites_ranked = patient_var_30 %>% group_by(ntpos) %>% tally() %>% 
-  drop_na(ntpos) %>% arrange(-n) %>% mutate(rank = 1:nrow(.)) %>% 
-  left_join(patient_var_30 %>% select(ntpos, gene, ref_sym, aapos, ref_codon, codon_pos) %>% distinct) %>%
-  mutate(label = paste0(gene, ": ",ref_sym, aapos), refnt = str_sub(ref_codon, start = codon_pos, end = codon_pos))
+patient_var_30_for_rank = patient_var_30 %>% drop_na(gene) %>% filter(gene !="") %>%
+  mutate(label = paste0(ref_sym, aapos), 
+         refnt = str_sub(ref_codon, start = codon_pos, end = codon_pos))
+
+ldm_map = patient_var_30_for_rank %>% 
+  mutate(ldm  = ifelse(ntpos %in% lineage_defining_mutations$nt_pos, TRUE, FALSE)) %>% 
+  select(gene, label, ldm) %>% distinct %>% group_by(gene, label) %>% arrange(-ldm) %>%
+  filter(row_number()==1)
+  
+
+highly_shared_sites_ranked = patient_var_30_for_rank %>% drop_na(gene) %>% filter(gene !="") %>%
+  mutate(label = paste0(ref_sym, aapos), 
+         refnt = str_sub(ref_codon, start = codon_pos, end = codon_pos)) %>%
+  group_by(mcov_id, gene, label) %>%
+  tally() %>% 
+  arrange(-n) %>% ungroup %>% group_by(gene, label) %>% 
+  summarize(label_count = n()) %>% ungroup() %>% arrange(-label_count) %>% mutate(rank = 1:nrow(.)) %>%
+  left_join(ldm_map) %>% unique()
+
+# highly_shared_sites_ranked_50 = highly_shared_sites_ranked %>% filter(rank <= 25)
+# 
+# ((
+#   hss_maf_50<-patient_var_30 %>% filter(paste0(gene, aapos) %in% paste0(highly_shared_sites_ranked_50$gene, parse_number(highly_shared_sites_ranked_50$label))) %>% 
+#     ggplot(aes(x = as.factor(ntpos), y = minorfreq)) + 
+#     #geom_point(alpha = 0.2, position = position_jitter(width = 0.1)) + theme_bw() + 
+#     geom_boxplot(outlier.shape = NA, alpha =0.5) + theme_bw() +
+#     theme(axis.text.x = element_text(angle=90)) + #geom_boxplot(outlier.alpha = 0) + 
+#     xlab("Nucleotide position") + ylab("Minor allele freq") ))
+# 
+# ggsave("ggsave/hss_maf_50.pdf", hss_maf_50, width = 5, height = 3)
 
 
+#%>% 
+ # left_join(patient_var_30 %>% select(ntpos, gene, ref_sym, aapos, ref_codon, codon_pos) %>% distinct)
 
-((
-  highly_shared_sites<- patient_var_30 %>% group_by(ntpos) %>% tally() %>% arrange(desc(n)) %>% 
-       drop_na(ntpos) %>% slice_max(n, n = 35) %>% pull(ntpos) %>% as.numeric()
-))
+# ((
+#   highly_shared_sites<- patient_var_30 %>% group_by(ntpos) %>% tally() %>% arrange(desc(n)) %>% 
+#        drop_na(ntpos) %>% slice_max(n, n = 35) %>% pull(ntpos) %>% as.numeric()
+# ))
+
 
 sample_n = length(unique(patient_var_30$mcov_id))
-highly_shared_sites_ranked %>% filter(rank < 100) %>% ggplot(aes(rank, n)) + geom_line(color = "grey") +
+#for (this_gene in gene_limits$gene_id) {
+  plot_ranks = highly_shared_sites_ranked %>% filter(rank <= 35) %>% 
+    ggplot(aes(rank, label_count, label = label)) + 
+  geom_line(data = highly_shared_sites_ranked %>% 
+              select(!gene) %>% filter(rank <= 35), aes(rank, label_count), color = "grey") +
   scale_y_continuous(trans = "log2", breaks = 2^seq(0,12,1),
-                     sec.axis = sec_axis(~./sample_n,
-                                                          labels = scales::label_percent(),
+                     sec.axis = sec_axis(~./sample_n, labels = scales::label_percent(),
                                            breaks = 2^seq(0,8,1)/100)) + theme_pubr() +
-  geom_point(data = highly_shared_sites_ranked %>% filter(rank < 100) %>% filter(gene == "S"), aes(rank, n)) +
-  geom_hline(yintercept = sample_n*0.01, linetype = "dashed", color = "salmon") +
-  geom_vline(xintercept = 35, linetype = "dashed", color = "salmon") +
+  geom_point(aes(rank, label_count), color = "grey") +
+  geom_text_repel(aes(label = label, color = ldm), ylim = c(6,11), xlim = c(NA, NA), angle = 90,
+                  segment.size = 0.6, segment.curvature = -1e-20, segment.linetype = 3,
+                  max.overlaps = Inf) + coord_cartesian(clip = "off") +
+    scale_color_manual(values = c("salmon", "grey")) +
+    facet_wrap(~gene)
   
-  geom_text_repel(data = highly_shared_sites_ranked %>% filter(rank < 100) %>% filter(gene == "S"), 
-                  aes(label = label), ylim = c(6, Inf), angle = 90,
-                  segment.size = 0.6, segment.curvature = -1e-20, segment.linetype = 3)
-
-  
-
-
-consensus_sites_lowct<-fread("consensus_minor_changes_20220713.csv", data.table = F) %>% 
-  mutate(MCoVNumber = mcov_reformat(name)) %>% filter(MCoVNumber %in% patient_var_30$MCoVNumber) #%>% 
-  #filter(major != refnt)
-
-
-consensus_sites_lowct
+  plot_ranks
+#}
+ggsave("ggsave/plot_ranks.pdf", plot_ranks, height = 5.5, width = 7)
 ```
+
 
 
 ```{r}
 # Across genome
-patient_counts_30 = read_feather("processing/patient_counts_30.arrow")
-consensus = consensus_sites_lowct %>% filter(major != refnt) %>% select(MCoVNumber, ntpos) %>% 
+bp = c("A", "T", "C", "G")
+lineage_defining_mutations = fread("20220103-TRACE-LineageDefinitions-v9.1.txt", data.table = F) %>%
+  filter(nt_ref %in% bp & 
+           nt_alt %in% bp & 
+           variation_type == "SNP") %>% select(nt_pos, nt_ref, nt_alt)
+
+lineage_defining_mutations
+
+plot_data_LDM_prop = patient_var_30 %>% group_by(MCoVNumber) %>% drop_na(ntpos) %>% 
+  summarize(iSNV_count = n(), iSNV = paste0(ntpos, collapse = ","), 
+            iSNV_LDM_count = length(ntpos[ntpos %in% lineage_defining_mutations$nt_pos]),
+            iSNV_LDM = paste0(ntpos[ntpos %in% lineage_defining_mutations$nt_pos],
+                              collapse = ","), prop = iSNV_LDM_count/iSNV_count)
+
+plot_data_LDM_prop %>% ggplot(aes(as.factor(iSNV_count), prop)) + geom_violin(draw_quantiles=c(0.5))
+
+```
+```{r}
+patient_var_30_reversions = patient_var_30 %>% mutate(reversion = minor == str_sub(ref_codon, 
+                            start = codon_pos, end = codon_pos)) %>% drop_na(reversion)
+
+# How many of our alleles were reversions?
+patient_var_30_reversions %>% summarize(proportion_reversion = sum(reversion==T)/
+                                          nrow(patient_var_30))
+
+# How many of our alleles that are reversions are at LDM sites?
+patient_var_30_reversions %>% mutate(ldm = ifelse(ntpos %in% lineage_defining_mutations$nt_pos,1,0)) %>% 
+  summarize(proportion_reversion = sum(ldm == 1 & reversion == T)/sum(reversion==T))
+
+# obscure the consensus in the VCF
+problem_sites_global = fread("problematic_sites_sarsCov2_v8-20211027.vcf", skip = 88) %>%
+  filter(FILTER != "mask") %>%
+  filter(!grepl('single_src|nanopore', INFO)) %>% pull(POS)
+problem_sites_houston = fread("problematic_sites_sarsCov2_v8-20211027.vcf", skip = 88) %>%
+  filter(grepl('Houston', INFO)) %>% pull(POS)
+problem_sites = unique(c(problem_sites_global, problem_sites_houston))
+problem_sites
+
+consensus <-fread("consensus_minor_changes_20220713.csv", data.table = F) %>% filter(!ntpos %in% problem_sites) %>% filter(!ntpos %in% c(1:265)) %>% filter(!ntpos>29674)
+
+
+
+consensus 
+
+#
+consensus_count = consensus %>% 
+  mutate(MCoVNumber = mcov_reformat(name)) %>% 
+  select(MCoVNumber, major, ntpos, refnt) %>% 
+  filter(major != refnt) %>% 
+  unique() %>%
   group_by(ntpos) %>%
-  tally(ntpos) %>% 
-  mutate(consensus = ifelse(n > nrow(patient_counts_30 ) * 0.01, TRUE, FALSE)) %>%
-  select(ntpos, consensus)
+  summarize(MCoVNumber = unique(MCoVNumber)) 
 
-minor_consensus_plotdata = patient_var_30 %>% left_join(consensus) %>% 
-    mutate(consensus = replace_na(consensus, FALSE))
+runs = fread("sample_date_and_run.csv", data.table = F) %>%
+    mutate(MCoVNumber = mcov_reformat(mcov_id))
 
-minor_prevalence_across_genome_unlog <- minor_consensus_plotdata %>% 
-    filter(consensus==TRUE) %>% ggplot(aes(x=ntpos)) + 
-#  scale_y_continuous(trans = "log2") +
-  geom_bar(color = "grey") +
+consensus_runs = consensus_count %>% left_join(runs) %>% drop_na() %>%
+  select(ntpos, MCoVNumber_possible_contaminant = MCoVNumber, run_consensus = run_group) #has each of the consensus mutations with the MCOV
 
+# uncomment below if necessary
+#patient_var_30_contaminated = patient_var_30 %>% left_join(consensus_runs) # intensive
+#write_feather(patient_var_30_contaminated, "processing/patient_var_30_contaminated.arrow")
+
+patient_var_30_contaminated = read_feather("processing/patient_var_30_contaminated.arrow")
+contaminated_df = patient_var_30_contaminated %>% mutate(ref_nt = str_sub(ref_codon, 
+                            start = codon_pos, end = codon_pos)) %>% 
+  select(MCoVNumber, run_group, ntpos, ref_nt, major, minor, MCoVNumber_possible_contaminant, run_consensus)
+
+contaminated_df_tallied = contaminated_df %>% 
+  filter(run_group == run_consensus) %>% 
+  group_by(MCoVNumber) %>% 
+  summarize(n_var_contam = length(unique(ntpos)), MCoVNumber_possible_contaminant) %>%
+  group_by(MCoVNumber, MCoVNumber_possible_contaminant) %>% 
+  summarize(n_var_contam, single_sample = n(), prop_single_sample = single_sample / n_var_contam)
+
+contaminated_df_tallied_top = contaminated_df_tallied %>% group_by(MCoVNumber) %>% top_n(n=1) %>%
+  filter(row_number()==1)
+
+patient_counts_30 = read_feather("processing/patient_counts_30.arrow")
+patient_counts_30_anno = patient_counts_30 %>% left_join(contaminated_df_tallied_top) %>%
+  mutate(run_num = as.numeric(str_replace(run_group, "Run_", ""))) %>%
+  #select(MCoVNumber, run_num, n_var, n_var_contam, single_sample) %>%
+  replace(is.na(.),0)
+
+# Plot: n_var x prob that it's from a single source
+plot_contam = patient_counts_30_anno %>% mutate(prop_contam = n_var_contam/n_var, prop_single_contam = single_sample/n_var) 
+
+plot_contam %>% select(n_var, admitted_hospital, prop_contam, prop_single_contam) %>% 
+  pivot_longer(cols= c(prop_contam, prop_single_contam), names_to = "type", values_to = "prop")  %>%
+  ggplot(aes(x = admitted_hospital, y = prop, 
+             fill = type)) + 
+  geom_violin(draw_quantiles = c(0.25,0.5,0.75))
+
+median_contam_contam = quantile(plot_contam %>% filter(n_var > 0) %>% 
+                                  pull(prop_contam), probs = c(0.5))
+print(median_contam_contam)
+plot_contam_contam = plot_contam %>% 
+  select(n_var, admitted_hospital, prop_contam, prop_single_contam) %>% 
+  ggplot(aes(x = n_var, y = prop_contam, 
+             fill = admitted_hospital, color = admitted_hospital)) + 
+  geom_point(alpha = 0.02) + geom_smooth() + theme_pubr() +
+  geom_hline(yintercept = median_contam_contam, linetype = "dashed")
+
+plot_contam_contam = ggMarginal(plot_contam_contam, groupColour = T, groupFill = T, type = "violin",
+           draw_quantiles = c(0.25, 0.5, 0.75))
+
+median_single_contam = quantile(plot_contam %>% filter(n_var > 0) %>% 
+                                  pull(prop_single_contam), probs = c(0.5))
+print(median_single_contam)
+plot_contam_single_contam = plot_contam %>% 
+  select(n_var, admitted_hospital, prop_contam, prop_single_contam) %>% 
+  ggplot(aes(x = n_var, y = prop_single_contam, 
+             fill = admitted_hospital, color = admitted_hospital)) + 
+  geom_point(alpha = 0.02) + geom_smooth() + theme_pubr() + 
+  geom_hline(yintercept = median_single_contam, linetype = "dashed")
+
+plot_contam_single_contam = ggMarginal(plot_contam_single_contam, 
+                                       groupColour = T, groupFill = T, 
+                                       type = "violin",
+           draw_quantiles = c(0.25, 0.5, 0.75))
+
+plot_contam_arranged = ggarrange(plot_contam_contam, plot_contam_single_contam,
+                                 align = "v",
+                                 labels = "AUTO")
+plot_contam_arranged
+ggsave("ggsave/plot_contam_arranged.pdf", plot_contam_arranged, height = 3, width = 6)
+```
+
+ ```{r}
+# for (i in 1:length(names(run_mutations_list))) {
+#    patient_var_run_consensus_tmp = patient_var_30 %>% filter(minor != str_sub(ref_codon, 
+#                             start = codon_pos, end = codon_pos)) %>% # no reversions
+#     filter(run_group == names(consensus_runs_list)[i]) %>% as.data.frame #%>% 
+#    for (j in 1:nrow(patient_var_run_consensus_tmp)) {
+#      tmp_id = consensus_runs[which(grepl(patient_var_run_consensus_tmp$ntpos[j], 
+#            consensus_runs_list[[i]])), "MCoVNumber"]
+#      if (j ==1) id = tmp_id else id = c(id, tmp_id)
+#    } 
+#    names(id) = patient_var_run_consensus_tmp$ntpos
+#    
+#     
+#     
+#    if (i==1) {
+#      patient_var_run_consensus = patient_var_run_consensus_tmp
+#    } else {
+#      patient_var_run_consensus = rbind(patient_var_run_consensus, patient_var_run_consensus_tmp)
+#    }
+# }
+# 
+# consensus_stat = patient_var_run_consensus %>% group_by(MCoVNumber) %>% 
+#   summarize(INSTRUMENT_RESULT, n_var = n(), prop_in_consensus = sum(consensus_in_run)/n())
+# 
+# consensus_stat %>% arrange(-prop_in_consensus)
+# consensus_stat %>% filter(INSTRUMENT_RESULT < 26) %>% mutate(cut(INSTRUMENT_RESULT, c(0,26)))
+#   ggplot(aes(n_var, prop_in_consensus, color )) + geom_point(shape = "") + geom_smooth() + geom_density_2d() +
+#   theme_pubr() + scale_x_continuous
+# 
+# 
+# patient_var_tmp = read_feather("processing/patient_var_tmp.arrow")
+```
+
+
+```{r}
+#consensus_sites_lowct %>% filter(refnt == major)
+patient_counts_30 = read_feather("processing/patient_counts_30.arrow")
+
+
+# criteria to count the mutation
+# consensus = if ntpos matches in the list above, then 
+# the minor will also match the nt_ref (i.e. reversion) or the nt_alt
+
+
+ldm = c(paste0(lineage_defining_mutations$nt_alt,
+                                      lineage_defining_mutations$nt_pos,
+                                      lineage_defining_mutations$nt_ref),
+                               paste0(lineage_defining_mutations$nt_ref,
+                                      lineage_defining_mutations$nt_pos,
+                                      lineage_defining_mutations$nt_alt))
+        
+minor_consensus_plotdata = patient_var_30 %>% #left_join(consensus) %>% 
+    mutate(ref_nt = str_sub(ref_codon, 
+                            start = codon_pos, end = codon_pos),
+      ref_mutation = paste0(ref_nt, ntpos, minor),
+      mutation = paste0(major, ntpos, minor), consensus = 
+             ifelse(ntpos %in% lineage_defining_mutations$nt_pos, 
+                    ifelse((mutation %in% ldm) | (ref_mutation %in% ldm),
+                           TRUE, FALSE),      
+                           FALSE)) %>% #filter(consensus == FALSE) %>%
+  group_by(ntpos, consensus) %>% 
+  summarize(consensus = consensus, n = n()) %>%
+  unique %>% drop_na %>% ungroup %>% arrange(-n) %>%
+  mutate(rank = 1:nrow(.))
+
+minor_prevalence_across_genome_unlog <- minor_consensus_plotdata  %>%
+    ggplot(aes(x = ntpos, y = n, fill = consensus, color = consensus)) + 
     # label your data too for the SALMON
-    geom_bar(data = minor_consensus_plotdata %>% filter(consensus == FALSE), 
-       aes(x = ntpos), color = "salmon") +
-  # geom_point(data = minor_consensus_plotdata %>% filter(consensus == FALSE) %>% 
-  #              group_by(ntpos) %>% tally(), 
-  #          aes(x = ntpos, y= n), shape = "", color = "salmon") + 
+    geom_bar(stat = "identity") + 
+  scale_color_manual(values = c("salmon","grey")) + scale_fill_manual(values = c("salmon","grey")) +
     
-    # label your data too for the GREY
-    
-      geom_point(data = minor_consensus_plotdata %>%
-               group_by(ntpos) %>% tally(), 
-           aes(x = ntpos, y= n), shape = "") + 
-    scale_color_manual(values = c("salmon","grey")) + 
+      geom_point( aes(x = ntpos, y= n), shape = "") +
+    #scale_color_manual(values = c("salmon","black")) + 
   theme_bw() + 
   geom_hline(yintercept = nrow(patient_counts_30)*0.01, linetype="dotted") + 
   xlab("Nucleotide position") + ylab("No. samples w/minor variant at site") + 
   annotate("rect", xmin=27894, xmax=28295, ymin=0, ymax=Inf, alpha=0.2, fill="#85D4E3") + 
   annotate("rect", xmin=28274, xmax=29533, ymin=0, ymax=Inf, alpha=0.2, fill="#F4B5BD") + 
-  annotate("rect", xmin=21563, xmax=25384, ymin=0, ymax=Inf, alpha=0.2, fill="#FAD77B") + 
-  xlim(0,29903)
+  annotate("rect", xmin=21563, xmax=25384, ymin=0, ymax=Inf, alpha=0.2, fill="#FAD77B") +  xlim(0,29903)
+
+minor_prevalence_across_genome_unlog
 
 minor_prevalence_across_genome_unlog_labeled = 
   minor_prevalence_across_genome_unlog + 
-  geom_text_repel(max.overlaps = Inf, ylim  = c(500,NA), size = 3, angle = 90, segment.linetype = 3,
-                    segment.size = 0.6, segment.curvature = -1e-20, 
-                    arrow = arrow(length = unit(0.015, "npc"), type = "closed"),
-                    data = minor_consensus_plotdata %>% filter(ntpos %in% highly_shared_sites) %>% 
-                      group_by(ntpos) %>% tally() %>% left_join(minor_consensus_plotdata %>% 
-                                                                  select(ntpos, consensus)) %>% unique,
-                    aes(x = ntpos, y = n, label = ntpos, color = consensus))
+  geom_text_repel(max.overlaps = Inf, ylim  = c(500,NA), size = 3, angle = 90, 
+                  segment.linetype = 3, segment.size = 0.6, 
+                  segment.curvature = -1e-20, 
+                  arrow = arrow(length = unit(0.015, "npc"), 
+                                type = "closed"),
+                  data = minor_consensus_plotdata %>%
+                    filter(rank < 50),
+                    aes(x = ntpos, y = n, label = ntpos, color = consensus, fill = consensus))
+minor_prevalence_across_genome_unlog_labeled
 
 genes <- fread("ntpos_gene_update.csv", data.table = F)
 
@@ -105,19 +310,102 @@ gene_arrows<-ggplot(gene_limits, aes(xmin = start, xmax = end, y=molecule, label
   theme_genes() + ylab(NULL) + xlab(NULL) 
 
 
-
 ((
-  genome_fig_unlog<-plot_grid(gene_arrows, minor_prevalence_across_genome_unlog_labeled, nrow=2, rel_heights=c(0.25,1), axis="lr", align="hv")
+  genome_fig_unlog<-plot_grid(gene_arrows, minor_prevalence_across_genome_unlog_labeled + theme(legend.position = "bottom"), nrow=2, rel_heights=c(0.25,1), axis="lr", align="hv")
 ))
-ggsave("ggsave/genome_fig_unlog.pdf", plot = genome_fig_unlog, height = 5, width = 8)
+
+
+
+ggsave("ggsave/genome_fig_unlog.pdf", plot = genome_fig_unlog, height = 5, width = 12)
+```
+
+
+```{r}
+# Across genome
+# bp = c("A", "T", "C", "G")
+# # lineage_defining_mutations = fread("20220103-TRACE-LineageDefinitions-v9.1.txt", data.table = F) #%>%
+# #   filter(nt_ref %in% lineage_defining_mutuations & 
+# #            nt_alt %in% lineage_defining_mutuations & 
+# #            variation_type == "SNP", required == TRUE) %>% pull(nt_pos)
+# 
+# consensus_sites_lowct<-fread("consensus_minor_changes_20220713.csv", data.table = F) %>% 
+#   mutate(MCoVNumber = mcov_reformat(name)) %>% filter(MCoVNumber %in% patient_var_30$MCoVNumber) #%>% 
+#   #filter(major != refnt)
+# 
+# 
+# consensus_sites_lowct %>% filter(refnt == major)
+# patient_counts_30 = read_feather("processing/patient_counts_30.arrow")
+# consensus = consensus_sites_lowct %>% filter(major != refnt) %>% select(MCoVNumber, ntpos) %>% 
+#   group_by(ntpos) %>%
+#   tally(ntpos) %>% 
+#   mutate(consensus = ifelse(n > nrow(patient_counts_30 ) * 0.01, TRUE, FALSE)) %>%
+#   select(ntpos, consensus)
+# 
+# minor_consensus_plotdata = patient_var_30 %>% left_join(consensus) %>% 
+#     mutate(consensus = replace_na(consensus, FALSE))
+# 
+# minor_prevalence_across_genome_unlog <- minor_consensus_plotdata %>% 
+#     filter(consensus==TRUE) %>% ggplot(aes(x=ntpos)) + 
+# #  scale_y_continuous(trans = "log2") +
+#   geom_bar(color = "grey") +
+# 
+#     # label your data too for the SALMON
+#     geom_bar(data = minor_consensus_plotdata %>% filter(consensus == FALSE), 
+#        aes(x = ntpos), color = "salmon") +
+#   # geom_point(data = minor_consensus_plotdata %>% filter(consensus == FALSE) %>% 
+#   #              group_by(ntpos) %>% tally(), 
+#   #          aes(x = ntpos, y= n), shape = "", color = "salmon") + 
+#     
+#     # label your data too for the GREY
+#     
+#       geom_point(data = minor_consensus_plotdata %>%
+#                group_by(ntpos) %>% tally(), 
+#            aes(x = ntpos, y= n), shape = "") + 
+#     scale_color_manual(values = c("salmon","grey")) + 
+#   theme_bw() + 
+#   geom_hline(yintercept = nrow(patient_counts_30)*0.01, linetype="dotted") + 
+#   xlab("Nucleotide position") + ylab("No. samples w/minor variant at site") + 
+#   annotate("rect", xmin=27894, xmax=28295, ymin=0, ymax=Inf, alpha=0.2, fill="#85D4E3") + 
+#   annotate("rect", xmin=28274, xmax=29533, ymin=0, ymax=Inf, alpha=0.2, fill="#F4B5BD") + 
+#   annotate("rect", xmin=21563, xmax=25384, ymin=0, ymax=Inf, alpha=0.2, fill="#FAD77B") + 
+#   xlim(0,29903)
+# 
+# minor_prevalence_across_genome_unlog_labeled = 
+#   minor_prevalence_across_genome_unlog + 
+#   geom_text_repel(max.overlaps = Inf, ylim  = c(500,NA), size = 3, angle = 90, segment.linetype = 3,
+#                     segment.size = 0.6, segment.curvature = -1e-20, 
+#                     arrow = arrow(length = unit(0.015, "npc"), type = "closed"),
+#                     data = minor_consensus_plotdata %>% filter(ntpos %in% highly_shared_sites) %>% 
+#                       group_by(ntpos) %>% tally() %>% left_join(minor_consensus_plotdata %>% 
+#                                                                   select(ntpos, consensus)) %>% unique,
+#                     aes(x = ntpos, y = n, label = ntpos, color = consensus))
+# 
+# genes <- fread("ntpos_gene_update.csv", data.table = F)
+# 
+# gene_limits<- genes %>% group_by(gene_id) %>% summarise(start=min(ntpos), end=max(ntpos)) %>% filter(gene_id!="") %>% mutate(molecule="")
+# 
+# gene_arrows<-ggplot(gene_limits, aes(xmin = start, xmax = end, y=molecule, label = gene_id)) +
+#   geom_gene_arrow(arrowhead_height = unit(3, "mm"), arrowhead_width = unit(1, "mm")) + geom_gene_label() + geom_segment(aes(x=266,y=1.5,xend=13468,yend=1.5), size=0.2) + xlim(0,29903) +
+#   annotate("text", label="ORF1a", x=5000, y=1.41, size=3) + geom_segment(aes(x=13468,y=1.4,xend=21555,yend=1.4), size=0.2) + annotate("text", label="ORF1b", x=18000, y=1.31, size=3) +
+#   theme_genes() + ylab(NULL) + xlab(NULL) 
+# 
+# ((
+#   genome_fig_unlog<-plot_grid(gene_arrows, minor_prevalence_across_genome_unlog_labeled, nrow=2, rel_heights=c(0.25,1), axis="lr", align="hv")
+# ))
+# ggsave("ggsave/genome_fig_unlog.pdf", plot = genome_fig_unlog, height = 5, width = 9)
 ```
 
 
 ## Characteristics of highly recurrent minor variants
-
-
 ```{r}
 # What's the range of minor allele frequencies the highly recurrent minor variants are found at?
+highly_shared_sites_top_ranked = highly_shared_sites_ranked %>% filter(rank <= 35)
+highly_shared_sites = patient_var_30_for_rank %>% filter(paste0(gene,".",label) %in%
+                                     paste0(highly_shared_sites_top_ranked$gene, ".", 
+                                            highly_shared_sites_top_ranked$label)) %>%
+          group_by(label, ntpos) %>% summarize(ntpos, ntpos_count = n()) %>% distinct() %>% arrange(-ntpos_count) %>% filter(ntpos_count > 50) %>% pull(ntpos)
+
+
 ((
   hss_maf<-patient_var_30 %>% filter(ntpos %in% highly_shared_sites) %>% 
     ggplot(aes(x = as.factor(ntpos), y = minorfreq)) + 
@@ -128,13 +416,13 @@ ggsave("ggsave/genome_fig_unlog.pdf", plot = genome_fig_unlog, height = 5, width
     scale_y_continuous(trans="log2", breaks = c(0.01*2^(0:5), 0.5))
   ))
 
-ggsave("ggsave/hss_maf.pdf", width = 4, height = 2, plot = hss_maf)
+ggsave("ggsave/hss_maf.pdf", width = 4, height = 1, plot = hss_maf)
 
 ((
   hss_maf_unlog<-patient_var_30 %>% filter(ntpos %in% highly_shared_sites) %>% 
     ggplot(aes(x = as.factor(ntpos), y = minorfreq)) + 
     geom_point(alpha = 0.2, position = position_jitter(width = 0.1)) + theme_bw() + 
-    geom_boxplot(outlier.shape = NA, alpha =0.5) + 
+    geom_boxplot(outlier.shape = NA, alpha = 0.5) + 
     theme(axis.text.x = element_text(angle=90)) + #geom_boxplot(outlier.alpha = 0) + 
     xlab("Nucleotide position") + ylab("Minor allele freq") #+ 
     #scale_y_continuous(trans="log2", breaks = c(0.01*2^(0:5), 0.5))
@@ -149,13 +437,14 @@ ggsave("ggsave/hss_maf_unlog.pdf", width = 4, height = 2, plot = hss_maf_unlog)
 hss_info <- fread('hss_data2.csv', data.table = F)
 
 ((
-  hss_plot = patient_var_30 %>% filter(ntpos %in% highly_shared_sites) %>% 
-    group_by(ntpos, major, minor) %>% summarise(n=n(), median_frequency = median(minorfreq)) %>% 
-    left_join(highly_shared_sites_ranked, by = "ntpos") %>% mutate(change=paste0(major,">",minor)) %>% 
+  hss_plot = patient_var_30_for_rank %>% filter(ntpos %in% highly_shared_sites) %>% 
+    group_by(ntpos, major, minor) %>% mutate(n=n(), median_frequency = median(minorfreq)) %>%     mutate(change=paste0(major,">",minor)) %>% 
     mutate(ref_reversion=if_else(minor==refnt,"yes","no")) %>% 
     mutate(median_MAF=if_else(median_frequency<0.02, 
                               "low (median <2% MAF)","high (median >=2% MAF)")) %>%
-    ggplot(aes(x=change, y=n.x, color=ref_reversion)) + 
+    
+    select(change, n, ref_reversion, ntpos, label, median_MAF) %>% distinct %>%
+    ggplot(aes(x=change, y=n, color=ref_reversion)) + 
     geom_bar(stat="identity", aes(fill=median_MAF)) + 
     scale_color_manual(values=c("white","red")) + 
     scale_fill_manual(values=c("darkmagenta","steelblue")) + 
@@ -163,13 +452,8 @@ hss_info <- fread('hss_data2.csv', data.table = F)
     theme_pubr() + theme(axis.text.x=element_text(angle=90))
 ))
 
-ggsave('ggsave/hss_plot.pdf', plot = hss_plot, width = 8, height = 10)
+ggsave('ggsave/hss_plot.pdf', plot = hss_plot, width = 10, height = 15)
 ```
-
-```{r}
-patient_var_30 %>% filter(ntpos == 24942)
-```
-
 
 ```{r, fig.height = 8, fig.width = 8}
 #is appearance of these sites consistent over time?
@@ -188,9 +472,9 @@ setdiff(mutations_of_interest$mutation_name, mutations_present$mutation_name)
 
 ```{r}
 #SUPP FIG 11
-obermeyer = mutations_present %>% left_join(mutations_of_interest) %>% ggplot(aes(x=COLLECTION_DT, y=n)) + geom_bar(stat="identity", fill="black", color="black") + facet_wrap(mutation_name~ntpos) + theme_pubr() + theme(axis.text.x=element_text(angle=90), strip.background = element_rect(fill="lightblue")) + xlab("Collection Date") + ylab("No. samples") + scale_x_date(minor_breaks="1 month")
-
-ggsave("ggsave/obermeyer.pdf", plot = obermeyer, width = 6, height = 5)
+# obermeyer = mutations_present %>% left_join(mutations_of_interest) %>% ggplot(aes(x=COLLECTION_DT, y=n)) + geom_bar(stat="identity", fill="black", color="black") + facet_wrap(mutation_name~ntpos) + theme_pubr() + theme(axis.text.x=element_text(angle=90), strip.background = element_rect(fill="lightblue")) + xlab("Collection Date") + ylab("No. samples") + scale_x_date(minor_breaks="1 month")
+# 
+# ggsave("ggsave/obermeyer.pdf", plot = obermeyer, width = 6, height = 5)
 
 ```
 
@@ -210,64 +494,75 @@ minors_table %>% filter(detected_minor_in_repl=="yes") %>% filter(ntpos %in% hig
 ```
 
 ```{r}
-runs_all_samples <- fread("run_samples.csv", data.table = F) %>% 
-  mutate(MCoVNumber=str_remove(`Sample ID`,"-"), run=Run) %>% 
-  select(run, MCoVNumber)
+# consensus_sites_lowct<-fread("consensus_minor_changes_20220713.csv", data.table = F) %>% 
+#    mutate(MCoVNumber = mcov_reformat(name))
+# runs_all_samples <- fread("run_samples.csv", data.table = F) %>% 
+#   mutate(MCoVNumber=str_remove(`Sample ID`,"-"), run=Run) %>% 
+#   select(run, MCoVNumber)
+# 
+# consensus_hss<-consensus_sites_lowct %>% filter(ntpos %in% highly_shared_sites) %>% 
+#   mutate(MCoVNumber=mcov_reformat(name)) %>% left_join(runs_all_samples) %>% drop_na(run)
+# 
+# empty_frame<-patient_var_30 %>% group_by(run, major) %>% tally() %>% 
+#   select(run, nt=major) %>% filter(nt != "")
+# consensus_minor_hss<-data.frame(run=as.character(), nt=as.character(), n=as.numeric(), type=as.character(), ntpos=as.numeric())
+# 
+# for (mutation in highly_shared_sites) {
+#   minors_site<-patient_var_30 %>% filter(ntpos==mutation) %>% 
+#     group_by(run, minor) %>% tally() %>% select(run, nt=minor, n) %>% 
+#     left_join(empty_frame) %>% mutate(n=replace_na(n, 0))
+#   minors_site$type<-"minor"
+#   minors_site$ntpos<-mutation
+#   consensus_site<-consensus_hss %>% filter(ntpos==mutation) %>% 
+#     filter(major %in% c("A","C","T","G")) %>% 
+#     group_by(run, major) %>% tally() %>% select(run, nt=major, n) %>% 
+#     left_join(empty_frame) %>% mutate(n=replace_na(n, 0))
+#   consensus_site$type<-"consensus"
+#   consensus_site$ntpos<-mutation
+# consensus_minor_hss<-rbind(consensus_minor_hss, minors_site, consensus_site)
+# }
+# 
+# consensus_minor_hss
+```
+```{r}
+# fill in the consensus with REFNT also and make it a percent of the total.
 
-consensus_hss<-consensus_sites_lowct %>% filter(ntpos %in% highly_shared_sites_ranked$ntpos[1:35]) %>% 
-  mutate(MCoVNumber=mcov_reformat(name)) %>% left_join(runs_all_samples)
-
-consensus_hss = fread("all_samples_hss.csv", data.table = F)
-
-empty_frame<-patient_var_30 %>% group_by(run, major) %>% tally() %>% 
-  select(run, nt=major) %>% filter(nt != "")
-consensus_minor_hss<-data.frame(run=as.character(), nt=as.character(), n=as.numeric(), type=as.character(), ntpos=as.numeric())
-
-for (mutation in highly_shared_sites) {
-  minors_site<-patient_var_30 %>% filter(ntpos==mutation) %>% 
-    group_by(run, minor) %>% tally() %>% select(run, nt=minor, n) %>% 
-    left_join(empty_frame) %>% mutate(n=replace_na(n, 0))
-  minors_site$type<-"minor"
-  minors_site$ntpos<-mutation
-  consensus_site<-consensus_hss %>% filter(ntpos==mutation) %>% 
-    filter(major %in% c("A","C","T","G")) %>% 
-    group_by(run, major) %>% tally() %>% select(run, nt=major, n) %>% 
-    left_join(empty_frame) %>% mutate(n=replace_na(n, 0))
-  consensus_site$type<-"consensus"
-  consensus_site$ntpos<-mutation
-consensus_minor_hss<-rbind(consensus_minor_hss, minors_site, consensus_site)
-}
+# runs_all_samples
+# consensus_minor_hss_prop = consensus_minor_hss %>% left_join((patient_var_30_for_rank %>% select(ntpos, refnt) %>% distinct)) %>% group_by(type, run, ntpos) %>% distinct %>% summarize(nt, prop = n/sum(n))
 ```
 
 
 
 ```{r, fig.width = 8, fig.height = 8}
-hss_plots = function(hss_1) {
-    hss_1_plots = consensus_minor_hss %>% 
-      mutate(run = str_remove(run, "Run_") %>% as.numeric) %>% 
-      na.omit() %>% filter(ntpos %in% hss_1) %>% 
-    ggplot(aes(x=run, y=n, fill=nt)) + geom_bar(stat="identity") +
-    scale_fill_manual(values=viridis(5)) + facet_grid(type~ntpos, scales="free_y") + 
-    theme_pubr() + theme(axis.text.x=element_text(angle=90), legend.position="none") +
-      scale_x_continuous(breaks = seq(0,100,10))
-    return(hss_1_plots)
-}
-
-# order highly_shared_sites by the y axis scale
-hss_ordered = consensus_minor_hss %>% filter(type == "minor") %>% group_by(ntpos) %>%
-  summarize(max_counts = max(n)) %>% arrange(max_counts) %>% 
-  pull(ntpos) %>% unique()
-
-hss_1_plots<-hss_plots(hss_ordered[1:5])
-hss_2_plots<-hss_plots(hss_ordered[6:10])
-hss_3_plots<-hss_plots(hss_ordered[11:15])
-hss_4_plots = hss_plots(hss_ordered[16:20])
-hss_5_plots = hss_plots(hss_ordered[21:length(hss_ordered)])
-
-hss_plot_basepairs = plot_grid(hss_1_plots, hss_2_plots, hss_3_plots, hss_4_plots, 
-                               hss_5_plots, nrow=5)
-
-ggsave("ggsave/hss_plot_basepairs.pdf", hss_plot_basepairs, height = 12, width = 10)
+# hss_plots = function(hss_1) {
+#     hss_1_plots = consensus_minor_hss_prop %>% 
+#       mutate(run = str_remove(run, "Run_") %>% as.numeric) %>% 
+#       na.omit() %>% filter(ntpos %in% hss_1) %>% 
+#     ggplot(aes(x=run, y = prop, fill=nt)) + geom_bar(stat="identity") + #geom_bar(stat="identity") +
+#     scale_fill_manual(values=turbo(5)) + facet_grid(type~ntpos, scales="free_y") + 
+#     theme_pubr() + theme(axis.text.x=element_text(angle=90), legend.position="none") +
+#       scale_x_continuous(breaks = seq(0,100,10))
+#     return(hss_1_plots)
+# }
+# 
+# # order highly_shared_sites by the y axis scale
+# hss_ordered = consensus_minor_hss %>% filter(type == "minor") %>% group_by(ntpos) %>%
+#   summarize(max_counts = max(n)) %>% arrange(max_counts) %>% 
+#   pull(ntpos) %>% unique()
+# 
+# hss_1_plots<-hss_plots(hss_ordered[1:5])
+# 
+# hss_1_plots
+# hss_2_plots<-hss_plots(hss_ordered[6:10])
+# hss_3_plots<-hss_plots(hss_ordered[11:15])
+# hss_4_plots = hss_plots(hss_ordered[16:20])
+# hss_5_plots = hss_plots(hss_ordered[21:length(hss_ordered)])
+# 
+# hss_plot_basepairs = plot_grid(hss_1_plots, hss_2_plots, hss_3_plots, hss_4_plots, 
+#                                hss_5_plots, nrow=5)
+# hss_plot_basepairs
+# 
+# ggsave("ggsave/hss_plot_basepairs.pdf", hss_plot_basepairs, height = 12, width = 10)
 ```
 
 ```{r}
@@ -302,7 +597,7 @@ tally_in_gisaid<-fread('hss_gisaid_tallies.csv', data.table = F) %>% select(ntpo
 ggsave("ggsave/gisaid_vs_hmh_plot.pdf", plot = gisaid_vs_hmh_plot, width = 6, height = 5)
 ```
 
-```{r}
+```{r, fig.height = 6, fig.width = 6}
 # MUTATION SPECTRA ANALYSIS
 
 # reproducibility analysis from RMD 01

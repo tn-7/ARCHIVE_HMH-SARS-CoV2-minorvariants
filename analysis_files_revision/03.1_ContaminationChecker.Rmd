@@ -1,0 +1,28 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Quantify reversions.
+Delete iSNV reversions (quantify how many there are)
+Throw out samples with just 1 iSNV.
+
+Then compound a list of consensus sequence mutations per sample
+One hot encoding on what the positional read is.
+Add the minor and the major onehot encoding.
+
+Fisher exact test per each report P values
+Do this per sequencing run
+Repeat this when scrambling sequencing run
+
+JACCARD DISTANCES, baseline model then compare with your actual.
+
+REPORT IT BUT DON'T DO ANYTHING.
+
+
+
+```{r}
+plot(cars)
+```
+
+

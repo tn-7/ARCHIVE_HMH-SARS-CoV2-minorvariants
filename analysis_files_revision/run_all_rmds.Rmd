@@ -9,6 +9,7 @@ library(rmarkdown)
 files = c("01_load_new_samples.Rmd", "01.1_CodonPositions.Rmd", 
           "02.1_OdssRatios.Rmd", "02.1.1_Table1.Rmd", "02.1.2_Ordinal_Scan.Rmd", 
           "02.2_DifferentialGeneVariants.Rmd", "03_recurrent_mutations_analysis.Rmd")
+sapply(files, FUN=render)
 
 
 ```
