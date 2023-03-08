@@ -17,7 +17,7 @@ libraries = c("tidyverse", "cowplot", "glmnet",
              "pheatmap", "ggsci", "ggExtra", "lubridate", "scales",
              "magrittr", "arrow","tableone", "broom", "glmmTMB", "foreach",
              "doParallel", "ggforestplot", "readr", "ComplexHeatmap",
-             "tidyHeatmap", "GetoptLong");
+             "tidyHeatmap", "GetoptLong", "circlize");
 
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(char=libraries)
@@ -54,3 +54,7 @@ dup65.66<-c("MCoV-55544_S733", "MCoV-55545_S734", "MCoV-55546_S735",
 runs_to_drop = readRDS("processing/runs_to_drop.rds")
 
 select = dplyr::select
+
+normalize <- function(x, ...) {
+  return((x - min(x, ...)) /(max(x, ...) - min(x, ...)))
+}

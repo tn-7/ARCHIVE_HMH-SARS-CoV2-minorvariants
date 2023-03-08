@@ -425,6 +425,95 @@ heatmap_spectra_hss
 # pacman::p_load(ComplexHeatmap)
          
 ```
+``` {r}
+# samples of minor variant / samples consensus variant per sequencing run
+# consensus <-fread("consensus_minor_changes_20220713.csv", data.table = F) %>% 
+#   filter(!ntpos %in% problem_sites) %>% 
+#   filter(!ntpos %in% c(1:265)) %>% 
+#   filter(!ntpos>29674)
+# 
+# consensus_count = consensus %>%
+#   mutate(MCoVNumber = mcov_reformat(name)) %>%
+#   select(MCoVNumber, major, ntpos, refnt) %>%
+#   filter(major != refnt) %>%
+#   unique() %>%
+#   group_by(ntpos) %>%
+#   summarize(MCoVNumber = unique(MCoVNumber))
+# 
+# runs = fread("sample_date_and_run.csv", data.table = F) %>%
+#     mutate(MCoVNumber = mcov_reformat(mcov_id))
+# 
+# consensus_runs = consensus_count %>% left_join(runs) %>% drop_na() %>%
+#   select(ntpos, MCoVNumber_possible_contaminant = MCoVNumber, run_consensus = run_group) #has each of the consensus mutations with the MCOV
+# write_feather(consensus_runs, "processing/consensus_runs.arrow")
+consensus_runs = read_feather("processing/consensus_runs.arrow")
+
+
+major_minor_table = function(consensus_runs = consensus_runs, all = F, 
+                             outfile = "ggsave/heatmap_run_mutation.pdf",
+                             threshold_sites = NULL) {
+  run_ntpos_major_count = consensus_runs %>% 
+    group_by(run=run_consensus, ntpos) %>% 
+  summarize(major_count = n())
+# now build # minor variant per position per run
+  run_ntpos_minor_count = patient_var_30 %>% select(MCoVNumber, run, ntpos) %>% 
+    group_by(run, ntpos) %>% summarize(minor_count = n())
+  if (all == F) {
+    run_ntpos_minor_count_filtered = run_ntpos_minor_count %>% 
+      filter(ntpos %in% highly_shared_sites)
+  } else {
+    run_ntpos_minor_count_filtered = run_ntpos_minor_count %>% 
+      filter(ntpos %in% threshold_sites)
+  }
+    combined_minor_major_table =  run_ntpos_minor_count_filtered %>% 
+    left_join(run_ntpos_major_count) %>% replace(.,is.na(.),0) %>%
+    mutate(run = as.numeric(parse_number(run)))
+  
+  minor_run = combined_minor_major_table %>% select(-major_count) %>% 
+    pivot_wider(names_from = ntpos, values_from = minor_count) %>% 
+    replace(.,is.na(.),0) %>% column_to_rownames("run")
+  
+  major_run = combined_minor_major_table %>% select(-minor_count) %>% 
+    pivot_wider(names_from = ntpos, values_from = major_count) %>% 
+    replace(.,is.na(.),0) %>% column_to_rownames("run")
+  
+  major_run_norm = apply(major_run, 2, normalize) %>% as.data.frame() %>% 
+    replace(.,is.na(.),0) 
+  minor_run_norm = apply(minor_run, 2, normalize) %>% as.data.frame() %>% 
+    replace(.,is.na(.),0) 
+  
+  
+  major_heatmap = Heatmap(t(major_run_norm),
+                          col = mako(100), cluster_columns = F, 
+                          cluster_rows = F,
+          column_names_gp = gpar(fontsize = 4),
+          border_gp = gpar(col = NA), column_title = "major")
+  minor_heatmap = Heatmap(t(minor_run_norm), col = mako(100), 
+                          cluster_columns = F, cluster_rows = T, 
+                          column_names_gp = gpar(fontsize = 4),
+                          border_gp = gpar(col = NA), column_title = "minor",)
+  
+  # contrast heatmap is in log2FC of counts
+  col_fun = colorRamp2(c(-1, 0, 1), c("steelblue", "white", "red"))
+  contrast_heatmap = Heatmap((t(log2(minor_run_norm+1))-
+                                   t(log2(major_run_norm+1))), col = col_fun, 
+                          cluster_columns = F, cluster_rows = T, 
+                          column_names_gp = gpar(fontsize = 4),
+                          border_gp = gpar(col = NA), column_title = "log2((minor+1)/(major+1))", name = "log2FC")
+  pdf(qq(outfile), width = 6.5, height = 7)
+  draw(contrast_heatmap + minor_heatmap + major_heatmap,
+     merge_legend = TRUE, 
+     heatmap_legend_side = "right", 
+     annotation_legend_side = "right")
+  dev.off()
+}
+major_minor_table(consensus_runs)
+major_minor_table(consensus_runs, all = T, 
+                  outfile = "ggsave/heatmap_run_mutation_all.pdf",
+                  threshold_sites = minor_consensus_plotdata$ntpos[1:1000] %>% unique)
+
+```
+
 
 ```{r}
 #all minor variants that are found in at least 2% of high-coverage samples in Lythgoe et al https://www.science.org/doi/suppl/10.1126/science.abg0821/suppl_file/abg0821-lythgoe-sm.pdf
