@@ -34,4 +34,11 @@ x = print(table1, nonnormal = c('n_var'), cramVars = "sex", quote = FALSE, noSpa
 write.csv(x, file = "ggsave/Table1_by_admitted_JulyOnwards.csv")
 
 ```
+```{r}
+table1 <- CreateTableOne(factors, patient_counts_30 %>% filter(collection_date < "2021-07-01"),
+    strata = c("admitted_hospital"), addOverall = T)
+
+x = print(table1, nonnormal = c('n_var'), cramVars = "sex", quote = FALSE, noSpaces = T)
+write.csv(x, file = "ggsave/Table1_by_admitted_beforeJuly.csv")
+```
 
